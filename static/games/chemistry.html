@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Periodic Table Explorer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles to complement Tailwind CSS */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0e8d8; /* Parchment color */
+            background-image: url('https://www.transparenttextures.com/patterns/crissxcross.png');
+        }
+
+        .font-pirate {
+            font-family: 'IM Fell English SC', serif;
+        }
+        
+        /* Game board tile styling */
+        .map-tile {
+            aspect-ratio: 1 / 1;
+            background-size: cover;
+            position: relative;
+            border: 2px solid transparent;
+        }
+
+        .path {
+            background-color: #a07a56; /* Dirt path */
+            border: 2px solid #6b4e31;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .grass {
+            background-color: #6a994e; /* Grassy area */
+        }
+        
+        .water {
+             background-color: #4b8fbd; /* Water tile */
+        }
+
+        .trap {
+            background-image: url('https://image.flaticon.com/icons/svg/167/167026.svg'); /* Simple trap icon */
+            background-size: 60%;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        
+        .start {
+             background-color: #f2e8cf;
+        }
+
+        .treasure {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FFD700'%3E%3Cpath d='M20 6h-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v2H4a2 2 0 00-2 2v3a2 2 0 002 2h1v5a2 2 0 002 2h10a2 2 0 002-2v-5h1a2 2 0 002-2V8a2 2 0 00-2-2zm-4 0H8V4h8v2zm-6 10a1 1 0 11-2 0 1 1 0 012 0zm4 0a1 1 0 11-2 0 1 1 0 012 0z'/%3E%3C/svg%3E");
+            background-size: 70%;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: #f2e8cf;
+        }
+
+        /* Player icon styling */
+        #player {
+            width: 70%;
+            height: 70%;
+            background-color: #d9534f;
+            border-radius: 50%;
+            position: absolute;
+            transition: all 0.5s ease-in-out;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            border: 3px solid #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.7);
+        }
+        
+        /* Smooth transition for showing/hiding screens */
+        .screen {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+        }
+
+        .screen.hidden {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+            position: absolute;
+        }
+        
+        /* Question feedback modal styling */
+        #feedback-modal {
+            transition: opacity 0.3s, transform 0.3s;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-5xl mx-auto">
+        
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen text-center bg-[#c8a77d] p-8 rounded-2xl shadow-lg border-4 border-[#6b4e31]">
+            <h1 class="text-5xl md:text-7xl font-pirate text-[#6b4e31] mb-4">Periodic Table Explorer</h1>
+            <p class="text-lg text-[#6b4e31] mb-6">Answer chemistry questions to navigate the map and find the hidden treasure!</p>
+            <div class="max-w-md mx-auto">
+                <label for="class-level" class="block text-xl font-bold text-[#6b4e31] mb-2">Select Your Class Level:</label>
+                <select id="class-level" class="w-full p-3 rounded-lg bg-[#f0e8d8] border-2 border-[#6b4e31] text-lg text-[#6b4e31] focus:outline-none focus:ring-2 focus:ring-[#8a6a41]">
+                    <option value="9">Class 9: The Basics</option>
+                    <option value="10">Class 10: Periodic Trends</option>
+                    <option value="11">Class 11: Element Blocks</option>
+                    <option value="12">Class 12: Advanced Properties</option>
+                </select>
+                <button id="start-game" class="mt-6 w-full bg-[#8a6a41] text-white font-bold text-2xl py-3 px-6 rounded-lg shadow-md hover:bg-[#6b4e31] transition-colors duration-300 transform hover:scale-105">
+                    Start Adventure!
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen hidden w-full">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Left Panel: Status & Question -->
+                <div class="md:col-span-1 bg-[#c8a77d] p-6 rounded-2xl shadow-lg border-4 border-[#6b4e31] flex flex-col h-full">
+                    <h2 class="text-3xl font-pirate text-[#6b4e31] mb-4 text-center">Captain's Log</h2>
+                    <div id="status-bar" class="flex justify-around text-center mb-6 bg-[#f0e8d8] p-3 rounded-lg border-2 border-[#6b4e31]">
+                        <div>
+                            <span class="block text-sm font-bold text-[#6b4e31]">SCORE</span>
+                            <span id="score" class="text-2xl font-bold text-[#6b4e31]">0</span>
+                        </div>
+                        <div>
+                            <span class="block text-sm font-bold text-[#6b4e31]">LIVES</span>
+                            <div id="lives" class="flex items-center justify-center space-x-1 text-2xl"></div>
+                        </div>
+                    </div>
+                    <div id="question-area" class="flex-grow bg-[#f0e8d8] p-4 rounded-lg border-2 border-[#6b4e31] flex flex-col justify-center">
+                        <p id="question-text" class="text-lg font-semibold text-center mb-4 text-[#6b4e31]"></p>
+                        <div id="answer-options" class="grid grid-cols-2 gap-3">
+                            <!-- Answer buttons will be injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Game Board -->
+                <div class="md:col-span-2 bg-[#c8a77d] p-6 rounded-2xl shadow-lg border-4 border-[#6b4e31]">
+                     <h2 class="text-3xl font-pirate text-[#6b4e31] mb-4 text-center">Treasure Map</h2>
+                    <div id="game-board" class="grid grid-cols-10 gap-1 bg-[#4b8fbd] p-2 rounded-lg relative">
+                        <!-- Map tiles will be generated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-screen" class="screen hidden text-center bg-[#c8a77d] p-8 rounded-2xl shadow-lg border-4 border-[#6b4e31]">
+            <h1 id="end-title" class="text-5xl md:text-7xl font-pirate text-[#6b4e31] mb-4">You Found the Treasure!</h1>
+            <div id="end-treasure-icon" class="text-8xl mb-4">🏆</div>
+            <p class="text-2xl text-[#6b4e31] mb-2">Final Score: <span id="final-score" class="font-bold"></span></p>
+            <p class="text-2xl text-[#6b4e31] mb-6">Accuracy: <span id="accuracy" class="font-bold"></span>%</p>
+            <button id="play-again" class="w-full max-w-xs mx-auto bg-[#8a6a41] text-white font-bold text-2xl py-3 px-6 rounded-lg shadow-md hover:bg-[#6b4e31] transition-colors duration-300 transform hover:scale-105">
+                Play Again
+            </button>
+        </div>
+        
+        <!-- Feedback Modal -->
+        <div id="feedback-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 transform scale-125 opacity-0">
+             <div id="feedback-content" class="text-center bg-white p-8 rounded-2xl shadow-lg border-4 max-w-sm w-full">
+                <h2 id="feedback-title" class="text-4xl font-bold mb-2"></h2>
+                <p id="feedback-text" class="text-lg"></p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- DOM ELEMENTS ---
+            const startScreen = document.getElementById('start-screen');
+            const gameScreen = document.getElementById('game-screen');
+            const endScreen = document.getElementById('end-screen');
+            const classLevelSelect = document.getElementById('class-level');
+            const startGameBtn = document.getElementById('start-game');
+            const playAgainBtn = document.getElementById('play-again');
+
+            const scoreEl = document.getElementById('score');
+            const livesEl = document.getElementById('lives');
+            const questionTextEl = document.getElementById('question-text');
+            const answerOptionsEl = document.getElementById('answer-options');
+            const gameBoard = document.getElementById('game-board');
+
+            const endTitleEl = document.getElementById('end-title');
+            const endTreasureIconEl = document.getElementById('end-treasure-icon');
+            const finalScoreEl = document.getElementById('final-score');
+            const accuracyEl = document.getElementById('accuracy');
+            
+            const feedbackModal = document.getElementById('feedback-modal');
+            const feedbackContent = document.getElementById('feedback-content');
+            const feedbackTitle = document.getElementById('feedback-title');
+            const feedbackText = document.getElementById('feedback-text');
+
+            // --- GAME STATE ---
+            let score = 0;
+            let lives = 3;
+            let currentLevel = 9;
+            let questions = [];
+            let currentQuestionIndex = 0;
+            let playerPosition = 0; // index in the mapPath array
+            let totalAnswered = 0;
+            let correctAnswers = 0;
+
+            // --- GAME DATA ---
+
+            const questionsDB = {
+                '9': [
+                    { q: "What is the symbol for the element Sodium?", o: ["S", "Na", "So", "N"], a: "Na" },
+                    { q: "Which element has the atomic number 1?", o: ["Helium", "Oxygen", "Hydrogen", "Lithium"], a: "Hydrogen" },
+                    { q: "What is the chemical symbol for Gold?", o: ["Go", "Gd", "Ag", "Au"], a: "Au" },
+                    { q: "Carbon has an atomic number of...", o: ["6", "12", "8", "14"], a: "6" },
+                    { q: "Which of these is a noble gas?", o: ["Oxygen", "Chlorine", "Neon", "Nitrogen"], a: "Neon" },
+                    { q: "What group is Helium (He) in?", o: ["Group 1", "Group 2", "Group 17", "Group 18"], a: "Group 18" },
+                    { q: "What period is Potassium (K) in?", o: ["Period 2", "Period 3", "Period 4", "Period 5"], a: "Period 4" },
+                    { q: "The symbol 'Fe' stands for which element?", o: ["Fluorine", "Iron", "Francium", "Lead"], a: "Iron" },
+                ],
+                '10': [
+                    { q: "Which element has the largest atomic radius?", o: ["Na", "Mg", "Cl", "K"], a: "K" },
+                    { q: "Which of these elements is the most electronegative?", o: ["F", "Cl", "Br", "I"], a: "F" },
+                    { q: "Ionization energy generally ___ across a period.", o: ["Increases", "Decreases", "Stays the same", "Becomes zero"], a: "Increases" },
+                    { q: "Which element exhibits the most metallic character?", o: ["Be", "Mg", "Ca", "Sr"], a: "Sr" },
+                    { q: "Moving down a group, atomic radius generally...", o: ["Decreases", "Increases", "Remains constant", "Halves"], a: "Increases" },
+                    { q: "Which pair has similar chemical properties?", o: ["Na and Ar", "Li and Be", "F and Cl", "O and N"], a: "F and Cl" },
+                ],
+                '11': [
+                    { q: "Which element is in the 'd-block'?", o: ["Ca", "Sc", "Al", "P"], a: "Sc" },
+                    { q: "The 'p-block' contains which type of elements?", o: ["Metals only", "Non-metals only", "Metalloids only", "All of these"], a: "All of these" },
+                    { q: "What is the general electron configuration for alkali metals?", o: ["ns¹", "ns²", "np⁶", "nd¹"], a: "ns¹" },
+                    { q: "Which element is a transition metal?", o: ["Sodium", "Calcium", "Iron", "Aluminum"], a: "Iron" },
+                    { q: "The 'f-block' elements are also known as...", o: ["Alkaline Earth Metals", "Halogens", "Inner Transition Metals", "Noble Gases"], a: "Inner Transition Metals" },
+                ],
+                '12': [
+                    { q: "The decrease in atomic size from La to Lu is known as...", o: ["Actinide Contraction", "Lanthanide Contraction", "d-block Contraction", "Periodic Contraction"], a: "Lanthanide Contraction" },
+                    { q: "Which element shows the highest oxidation state?", o: ["Mn", "Fe", "Cr", "Os"], a: "Os" },
+                    { q: "Why is Zinc not considered a typical transition element?", o: ["It's a gas", "It has a full d-orbital", "It is not a metal", "It is radioactive"], a: "It has a full d-orbital" },
+                    { q: "Inert pair effect is most prominent in which block?", o: ["s-block", "p-block", "d-block", "f-block"], a: "p-block" },
+                    { q: "Which of these forms interstitial compounds?", o: ["Sodium", "Magnesium", "Titanium", "Argon"], a: "Titanium" },
+                ]
+            };
+            
+            // Defines the layout of the board and the path the player takes
+            const mapLayout = [
+                's', 'p', 'p', 'p', 'w', 'w', 't', 'p', 'p', 'p',
+                'w', 'w', 'w', 'p', 'w', 't', 'p', 'p', 'w', 'p',
+                'p', 'p', 'p', 'p', 't', 'p', 'p', 'w', 'w', 'p',
+                'p', 'w', 'w', 'w', 'p', 'p', 'w', 'p', 'p', 'p',
+                'p', 'p', 'p', 'w', 'p', 'w', 't', 'p', 'w', 'x',
+            ];
+            const mapPath = []; // An array of indices [0, 1, 2, ...] for path tiles
+            
+            // --- FUNCTIONS ---
+            
+            function initGame() {
+                startScreen.classList.remove('hidden');
+                gameScreen.classList.add('hidden');
+                endScreen.classList.add('hidden');
+                createBoard();
+            }
+
+            function startGame() {
+                score = 0;
+                lives = 3;
+                playerPosition = 0;
+                currentQuestionIndex = 0;
+                totalAnswered = 0;
+                correctAnswers = 0;
+
+                currentLevel = classLevelSelect.value;
+                questions = shuffleArray([...questionsDB[currentLevel]]);
+                
+                updateStatus();
+                displayQuestion();
+                updatePlayerPosition();
+                
+                startScreen.classList.add('hidden');
+                gameScreen.classList.remove('hidden');
+                endScreen.classList.add('hidden');
+            }
+
+            function createBoard() {
+                gameBoard.innerHTML = '';
+                mapPath.length = 0;
+                const pathIndices = [];
+                mapLayout.forEach((tileType, index) => {
+                    if(tileType === 'p' || tileType === 's' || tileType === 'x') {
+                        pathIndices.push(index);
+                    }
+                });
+
+                // Simple path ordering: left-to-right, top-to-bottom
+                pathIndices.sort((a,b) => a - b);
+                mapPath.push(...pathIndices);
+
+                mapLayout.forEach((tileType, index) => {
+                    const tile = document.createElement('div');
+                    tile.id = `tile-${index}`;
+                    tile.classList.add('map-tile', 'rounded');
+
+                    switch(tileType) {
+                        case 's': tile.classList.add('start'); break;
+                        case 'p': tile.classList.add('path'); break;
+                        case 'x': tile.classList.add('treasure'); break;
+                        case 'w': tile.classList.add('water'); break;
+                        case 't': tile.classList.add('path', 'trap'); break;
+                        default: tile.classList.add('grass');
+                    }
+                    gameBoard.appendChild(tile);
+                });
+                
+                const playerEl = document.createElement('div');
+                playerEl.id = 'player';
+                playerEl.innerHTML = ' adventurer '
+                gameBoard.appendChild(playerEl);
+            }
+
+            function updateStatus() {
+                scoreEl.textContent = score;
+                livesEl.innerHTML = '';
+                for (let i = 0; i < lives; i++) {
+                    const heart = document.createElement('span');
+                    heart.textContent = '♥';
+                    heart.classList.add('text-red-500');
+                    livesEl.appendChild(heart);
+                }
+            }
+
+            function displayQuestion() {
+                if (currentQuestionIndex >= questions.length) {
+                    // Cycle through questions if we run out
+                    currentQuestionIndex = 0;
+                    questions = shuffleArray([...questionsDB[currentLevel]]);
+                }
+
+                const question = questions[currentQuestionIndex];
+                questionTextEl.textContent = question.q;
+                answerOptionsEl.innerHTML = '';
+                
+                const shuffledOptions = shuffleArray([...question.o]);
+
+                shuffledOptions.forEach(option => {
+                    const button = document.createElement('button');
+                    button.textContent = option;
+                    button.classList.add('w-full', 'bg-[#8a6a41]', 'text-white', 'p-3', 'rounded-lg', 'hover:bg-[#6b4e31]', 'transition-colors', 'duration-200', 'font-semibold');
+                    button.onclick = () => checkAnswer(option);
+                    answerOptionsEl.appendChild(button);
+                });
+            }
+
+            function checkAnswer(selectedOption) {
+                totalAnswered++;
+                const correctOption = questions[currentQuestionIndex].a;
+                
+                // Disable buttons to prevent multiple clicks
+                Array.from(answerOptionsEl.children).forEach(btn => btn.disabled = true);
+
+                if (selectedOption === correctOption) {
+                    correctAnswers++;
+                    score += 10;
+                    showFeedback(true, `Correct! The answer is ${correctOption}.`);
+                    playerPosition++;
+                    
+                    setTimeout(() => {
+                        updatePlayerPosition();
+                        if (playerPosition >= mapPath.length - 1) {
+                            endGame(true);
+                        } else {
+                            currentQuestionIndex++;
+                            displayQuestion();
+                        }
+                    }, 1500);
+
+                } else {
+                    lives--;
+                    showFeedback(false, `Oops! The correct answer was ${correctOption}.`);
+                    
+                     setTimeout(() => {
+                        if (lives <= 0) {
+                            endGame(false);
+                        } else {
+                           currentQuestionIndex++;
+                           displayQuestion();
+                        }
+                    }, 1500);
+                }
+                updateStatus();
+            }
+            
+            function showFeedback(isCorrect, message) {
+                if (isCorrect) {
+                    feedbackContent.className = 'text-center bg-green-100 p-8 rounded-2xl shadow-lg border-4 border-green-500 max-w-sm w-full';
+                    feedbackTitle.textContent = 'Well Done!';
+                    feedbackTitle.className = 'text-4xl font-bold mb-2 text-green-700';
+                } else {
+                    feedbackContent.className = 'text-center bg-red-100 p-8 rounded-2xl shadow-lg border-4 border-red-500 max-w-sm w-full';
+                    feedbackTitle.textContent = 'Trap!';
+                    feedbackTitle.className = 'text-4xl font-bold mb-2 text-red-700';
+                }
+                feedbackText.textContent = message;
+                feedbackModal.classList.remove('hidden');
+                setTimeout(() => {
+                    feedbackModal.classList.remove('opacity-0', 'scale-125');
+                }, 10);
+
+                setTimeout(() => {
+                     feedbackModal.classList.add('opacity-0', 'scale-125');
+                     setTimeout(() => feedbackModal.classList.add('hidden'), 300);
+                }, 1400);
+            }
+
+            function updatePlayerPosition() {
+                const playerEl = document.getElementById('player');
+                const tileIndex = mapPath[playerPosition];
+                const targetTile = document.getElementById(`tile-${tileIndex}`);
+
+                if (targetTile) {
+                    const boardRect = gameBoard.getBoundingClientRect();
+                    const tileRect = targetTile.getBoundingClientRect();
+                    
+                    const x = tileRect.left - boardRect.left + (tileRect.width - playerEl.offsetWidth) / 2;
+                    const y = tileRect.top - boardRect.top + (tileRect.height - playerEl.offsetHeight) / 2;
+                    
+                    playerEl.style.transform = `translate(${x}px, ${y}px)`;
+                }
+            }
+
+            function endGame(isWin) {
+                gameScreen.classList.add('hidden');
+                endScreen.classList.remove('hidden');
+
+                if (isWin) {
+                    endTitleEl.textContent = "You Found the Treasure!";
+                    endTreasureIconEl.textContent = "🏆";
+                } else {
+                    endTitleEl.textContent = "Lost at Sea!";
+                    endTreasureIconEl.textContent = "☠️";
+                }
+
+                finalScoreEl.textContent = score;
+                const accuracy = totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
+                accuracyEl.textContent = accuracy;
+            }
+
+            // --- UTILITY FUNCTIONS ---
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+
+            // --- EVENT LISTENERS ---
+            startGameBtn.addEventListener('click', startGame);
+            playAgainBtn.addEventListener('click', initGame);
+            
+            // Adjust player on resize
+            window.addEventListener('resize', () => {
+                if(!gameScreen.classList.contains('hidden')){
+                    updatePlayerPosition();
+                }
+            });
+
+            // --- INITIALIZE ---
+            initGame();
+        });
+    </script>
+</body>
+</html>

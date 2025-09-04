@@ -1,0 +1,68 @@
+{% extends "courses/base_courses.html" %}
+
+{% block courses_content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'courses:subject-detail' quiz.course.subject.pk %}">{{ quiz.course.subject.name }}</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'courses:course-detail' quiz.course.pk %}">{{ quiz.course.title }}</a></li>
+                <li class="breadcrumb-item active">{{ quiz.title }}</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title">{{ quiz.title }}</h2>
+                <p class="lead">{{ quiz.description }}</p>
+
+                {% if progress and progress.completed %}
+                <div class="alert alert-info">
+                    You have already completed this quiz with a score of {{ progress.score }}%.
+                    {% if progress.score >= quiz.passing_score %}
+                    <strong>Congratulations! You passed!</strong>
+                    {% else %}
+                    You can retake the quiz to improve your score.
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <form method="post" action="{% url 'courses:quiz-submit' quiz.pk %}">
+                    {% csrf_token %}
+                    {% for question in quiz.question_set.all %}
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ question.text }}</h5>
+                            <p class="text-muted">Points: {{ question.points }}</p>
+                            
+                            {% for choice in question.choice_set.all %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" 
+                                       name="question_{{ question.id }}" 
+                                       value="{{ choice.id }}" 
+                                       id="choice_{{ choice.id }}"
+                                       required>
+                                <label class="form-check-label" for="choice_{{ choice.id }}">
+                                    {{ choice.text }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg">Submit Quiz</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    Passing score: {{ quiz.passing_score }}% | 
+                    Total questions: {{ quiz.question_set.count }}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

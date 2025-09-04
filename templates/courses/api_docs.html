@@ -1,0 +1,184 @@
+{% extends "courses/base_courses.html" %}
+{% load static %}
+
+{% block title %}API Documentation - Rural Learning Platform{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css">
+<style>
+.endpoint {
+    @apply mb-8 border border-gray-200 rounded-lg overflow-hidden;
+}
+.endpoint-header {
+    @apply px-4 py-2 bg-gray-50 border-b border-gray-200;
+}
+.endpoint-body {
+    @apply p-4;
+}
+.http-method {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium mr-2;
+}
+.http-method.get {
+    @apply bg-green-100 text-green-800;
+}
+.http-method.post {
+    @apply bg-blue-100 text-blue-800;
+}
+.http-method.put {
+    @apply bg-yellow-100 text-yellow-800;
+}
+.http-method.delete {
+    @apply bg-red-100 text-red-800;
+}
+</style>
+{% endblock %}
+
+{% block courses_content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">API Documentation</h1>
+
+        <!-- Introduction -->
+        <div class="prose max-w-none mb-12">
+            <p>
+                This documentation describes the available API endpoints for the Rural Learning Platform.
+                All API endpoints require authentication unless specifically marked as public.
+            </p>
+            <h2>Authentication</h2>
+            <p>
+                Use JWT tokens for authentication. Include the token in the Authorization header:
+                <code>Authorization: Bearer your-token-here</code>
+            </p>
+        </div>
+
+        <!-- Subjects API -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Subjects</h2>
+            
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method get">GET</span>
+                    <code>/api/subjects/</code>
+                </div>
+                <div class="endpoint-body">
+                    <p class="text-sm text-gray-600 mb-4">List all available subjects.</p>
+                    <pre><code class="language-json">{
+    "count": 10,
+    "next": null,
+    "previous": null,
+    "results": [
+        {
+            "id": 1,
+            "name": "Mathematics",
+            "description": "...",
+            "image": "..."
+        }
+    ]
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method get">GET</span>
+                    <code>/api/subjects/{id}/offline_content/</code>
+                </div>
+                <div class="endpoint-body">
+                    <p class="text-sm text-gray-600 mb-4">Get offline-available courses for a subject.</p>
+                    <pre><code class="language-json">[
+    {
+        "id": 1,
+        "title": "Basic Algebra",
+        "description": "...",
+        "is_offline_available": true,
+        "content_url": "..."
+    }
+]</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Courses API -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Courses</h2>
+            
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method get">GET</span>
+                    <code>/api/courses/</code>
+                </div>
+                <div class="endpoint-body">
+                    <p class="text-sm text-gray-600 mb-4">List all courses with optional filters.</p>
+                    <h4 class="font-medium mb-2">Query Parameters:</h4>
+                    <ul class="list-disc list-inside mb-4 text-sm">
+                        <li>subject: Filter by subject ID</li>
+                        <li>level: Filter by difficulty level</li>
+                        <li>search: Search in title and description</li>
+                    </ul>
+                    <pre><code class="language-json">{
+    "count": 20,
+    "next": "?page=2",
+    "previous": null,
+    "results": [
+        {
+            "id": 1,
+            "title": "Course Title",
+            "description": "...",
+            "subject": 1,
+            "level": "beginner",
+            "is_offline_available": true
+        }
+    ]
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method get">GET</span>
+                    <code>/api/courses/{id}/download_content/</code>
+                </div>
+                <div class="endpoint-body">
+                    <p class="text-sm text-gray-600 mb-4">Get downloadable content for offline use.</p>
+                    <pre><code class="language-json">{
+    "id": 1,
+    "title": "Course Title",
+    "content_url": "...",
+    "lessons": [...],
+    "quizzes": [...]
+}</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- Progress API -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Progress Tracking</h2>
+            
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method get">GET</span>
+                    <code>/api/progress/my_progress/</code>
+                </div>
+                <div class="endpoint-body">
+                    <p class="text-sm text-gray-600 mb-4">Get current user's progress across all courses.</p>
+                    <pre><code class="language-json">[
+    {
+        "course": 1,
+        "lessons_completed": [1, 2, 3],
+        "quizzes_completed": [1],
+        "percentage": 75,
+        "points": 150
+    }
+]</code></pre>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-json.min.js"></script>
+{% endblock %}

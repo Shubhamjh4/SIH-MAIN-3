@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treasure Hunt: Math Escape</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Bangers&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #1a202c; /* Equivalent to bg-gray-900 */
+        }
+        .font-bangers {
+            font-family: 'Bangers', cursive;
+        }
+        /* Custom animations and styles */
+        .chest-lid {
+            transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            transform-origin: bottom;
+        }
+        .chest.unlocked .chest-lid {
+            transform: rotateX(-120deg);
+        }
+        .door-inner {
+            transition: transform 0.6s ease-in-out;
+            transform-origin: left;
+            box-shadow: inset -5px 0 15px rgba(0,0,0,0.4);
+        }
+        .door.unlocked .door-inner {
+            transform: perspective(1200px) rotateY(-110deg);
+        }
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.7);
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            transform: translateY(-50px) scale(0.95);
+        }
+        .modal-container:not(.hidden) .modal-backdrop {
+            opacity: 1;
+        }
+        .modal-container:not(.hidden) .modal-content {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+        .life-heart {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        .life-heart.lost {
+            transform: scale(0);
+            opacity: 0;
+        }
+        .shake-animation {
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+            20%, 40%, 60%, 80% { transform: translateX(10px); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white overflow-hidden flex items-center justify-center min-h-screen">
+
+    <div id="game-container" class="w-full max-w-5xl mx-auto p-4">
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="text-center">
+            <h1 class="font-bangers text-7xl md:text-9xl text-yellow-400 drop-shadow-lg">Treasure Hunt</h1>
+            <h2 class="font-bangers text-5xl md:text-7xl text-yellow-200 mb-8">Math Escape</h2>
+            <p class="text-lg text-gray-300 mb-6">Select your class level to begin!</p>
+            <div id="level-selection" class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+                <button data-level="6-7" class="level-btn bg-blue-600 hover:bg-blue-700 p-4 rounded-lg shadow-lg transition duration-300 transform hover:scale-105">
+                    <span class="font-bold text-lg">Class 6–7</span>
+                    <span class="text-sm block">Fractions & Arithmetic</span>
+                </button>
+                <button data-level="8-9" class="level-btn bg-green-600 hover:bg-green-700 p-4 rounded-lg shadow-lg transition duration-300 transform hover:scale-105">
+                    <span class="font-bold text-lg">Class 8–9</span>
+                    <span class="text-sm block">Algebra & Geometry</span>
+                </button>
+                <button data-level="10" class="level-btn bg-purple-600 hover:bg-purple-700 p-4 rounded-lg shadow-lg transition duration-300 transform hover:scale-105">
+                    <span class="font-bold text-lg">Class 10</span>
+                    <span class="text-sm block">Quadratics & Trig</span>
+                </button>
+                <button data-level="11-12" class="level-btn bg-red-600 hover:bg-red-700 p-4 rounded-lg shadow-lg transition duration-300 transform hover:scale-105">
+                    <span class="font-bold text-lg">Class 11–12</span>
+                    <span class="text-sm block">Calculus & Probability</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="hidden">
+            <!-- HUD -->
+            <div id="hud" class="flex justify-between items-center bg-gray-800/50 backdrop-blur-sm p-3 rounded-lg shadow-lg mb-6">
+                <div class="text-lg font-semibold">Score: <span id="score" class="text-yellow-400">0</span></div>
+                <div class="text-lg font-semibold">Time: <span id="timer" class="text-cyan-400">0s</span></div>
+                <div id="lives" class="flex gap-2">
+                    <!-- Hearts will be generated here -->
+                </div>
+            </div>
+            
+            <!-- Room -->
+            <div id="room" class="relative bg-gray-800 p-8 rounded-xl shadow-2xl border-4 border-gray-700" style="height: 60vh;">
+                 <h3 id="room-title" class="text-center text-2xl font-bold text-yellow-300 mb-6">Escape the Room!</h3>
+                <div class="flex flex-col md:flex-row justify-around items-center h-full gap-8">
+                    <!-- Treasure Chest -->
+                    <div id="chest" class="w-48 h-36 cursor-pointer transform hover:scale-105 transition duration-300" aria-label="A treasure chest. Click to solve a puzzle.">
+                        <div class="relative w-full h-full">
+                            <div class="chest-base w-full h-2/3 bg-yellow-800 absolute bottom-0 rounded-lg border-4 border-yellow-900 flex items-center justify-center">
+                                <div class="w-8 h-8 bg-gray-900 rounded-full"></div>
+                            </div>
+                            <div class="chest-lid w-full h-1/3 bg-yellow-700 absolute top-0 rounded-t-lg border-4 border-yellow-900"></div>
+                        </div>
+                    </div>
+                    <!-- Door -->
+                    <div id="door" class="w-40 h-72 bg-gray-900 rounded-lg p-2 cursor-pointer transform hover:scale-105 transition duration-300" aria-label="A locked door. Click to solve the final puzzle.">
+                         <div class="door-inner w-full h-full bg-indigo-900 rounded-md flex items-center justify-end pr-4">
+                            <div class="w-6 h-6 bg-yellow-400 rounded-full"></div>
+                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- End Screen -->
+        <div id="end-screen" class="hidden text-center p-8 bg-gray-800 rounded-xl shadow-2xl">
+            <h2 id="end-title" class="font-bangers text-7xl text-yellow-400 mb-4">You Won!</h2>
+            <p class="text-xl mb-2">Final Score: <span id="final-score" class="font-bold text-green-400"></span></p>
+            <p class="text-xl mb-6">Time Taken: <span id="final-time" class="font-bold text-cyan-400"></span></s  pan></p>
+            <button id="play-again-btn" class="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-lg transition duration-300 transform hover:scale-105">Play Again</button>
+        </div>
+
+    </div>
+
+    <!-- Puzzle Modal -->
+    <div id="puzzle-modal" class="modal-container hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="modal-backdrop fixed inset-0 opacity-0"></div>
+        <div class="modal-content opacity-0 bg-gray-800 border-2 border-yellow-500 rounded-2xl shadow-xl w-full max-w-md p-6 relative z-10">
+            <h3 class="text-2xl font-bold text-center mb-4 text-yellow-300">Solve the Puzzle!</h3>
+            <p id="puzzle-question" class="text-lg text-center mb-5 min-h-[50px]"></p>
+            <form id="puzzle-form">
+                <input type="text" id="puzzle-answer" class="w-full bg-gray-900 text-white p-3 rounded-lg border-2 border-gray-600 focus:border-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-center text-xl" placeholder="Enter your answer" autocomplete="off">
+                <div id="answer-feedback" class="text-center mt-2 h-6 text-red-400 font-semibold"></div>
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg mt-4 transition duration-300 transform hover:scale-105">Unlock</button>
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM ELEMENTS ---
+            const startScreen = document.getElementById('start-screen');
+            const gameScreen = document.getElementById('game-screen');
+            const endScreen = document.getElementById('end-screen');
+            const levelSelectionButtons = document.querySelectorAll('.level-btn');
+            
+            const scoreEl = document.getElementById('score');
+            const timerEl = document.getElementById('timer');
+            const livesEl = document.getElementById('lives');
+            
+            const chestEl = document.getElementById('chest');
+            const doorEl = document.getElementById('door');
+
+            const puzzleModal = document.getElementById('puzzle-modal');
+            const puzzleQuestion = document.getElementById('puzzle-question');
+            const puzzleForm = document.getElementById('puzzle-form');
+            const puzzleAnswerInput = document.getElementById('puzzle-answer');
+            const answerFeedback = document.getElementById('answer-feedback');
+            
+            const endTitle = document.getElementById('end-title');
+            const finalScore = document.getElementById('final-score');
+            const finalTime = document.getElementById('final-time');
+            const playAgainBtn = document.getElementById('play-again-btn');
+
+            // --- GAME STATE ---
+            let score = 0;
+            let lives = 3;
+            let timerInterval;
+            let seconds = 0;
+            let currentLevelPuzzles = [];
+            let currentPuzzleIndex = 0;
+            let activePuzzleObject = null;
+            
+            // --- PUZZLE DATA ---
+            const allPuzzles = [
+                // Class 6-7
+                { level: '6-7', type: 'chest', question: 'What is 3/4 + 1/2? (as a decimal)', answer: '1.25' },
+                { level: '6-7', type: 'door', question: 'Calculate: 15 * (8 - 3)', answer: '75' },
+                { level: '6-7', type: 'chest', question: 'If a pizza has 8 slices and you eat 2, what fraction is left? (e.g., 3/4)', answer: '6/8' },
+                { level: '6-7', type: 'door', question: 'What is 50 - 5 * 8?', answer: '10' },
+
+                // Class 8-9
+                { level: '8-9', type: 'chest', question: 'Solve for x: 3x + 7 = 22', answer: '5' },
+                { level: '8-9', type: 'door', question: 'A triangle has a base of 10cm and height of 8cm. What is its area in cm²?', answer: '40' },
+                { level: '8-9', type: 'chest', question: 'What is 20% of 300?', answer: '60' },
+                { level: '8-9', type: 'door', question: 'What is the value of x² + 2x when x = 5?', answer: '35' },
+                
+                // Class 10
+                { level: '10', type: 'chest', question: 'Solve x² - 8x + 15 = 0. Enter the smaller root.', answer: '3' },
+                { level: '10', type: 'door', question: 'In a right triangle, if sin(θ) = 0.6, what is cos(θ)?', answer: '0.8' },
+                { level: '10', type: 'chest', question: 'A circle has a radius of 5. What is its area? (Use π ≈ 3.14)', answer: '78.5' },
+                { level: '10', type: 'door', question: 'Solve x² - 16 = 0. Enter the positive root.', answer: '4' },
+                
+                // Class 11-12
+                { level: '11-12', type: 'chest', question: 'What is the derivative of f(x) = 4x³ at x = 2?', answer: '48' }, // f'(x) = 12x^2
+                { level: '11-12', type: 'door', question: 'What is the probability of rolling a 6 on a fair die twice in a row? (as a fraction)', answer: '1/36' },
+                { level: '11-12', type: 'chest', question: 'Calculate the limit of (x²-4)/(x-2) as x approaches 2.', answer: '4' },
+                { level: '11-12', type: 'door', question: 'What is the integral of 3x² dx?', answer: 'x^3' },
+            ];
+
+            // --- GAME LOGIC ---
+
+            function initGame() {
+                startScreen.classList.remove('hidden');
+                gameScreen.classList.add('hidden');
+                endScreen.classList.add('hidden');
+                
+                chestEl.classList.remove('unlocked');
+                doorEl.classList.remove('unlocked');
+                
+                clearInterval(timerInterval);
+            }
+            
+            function startGame(level) {
+                // Reset state
+                score = 0;
+                lives = 3;
+                seconds = 0;
+                currentPuzzleIndex = 0;
+                
+                // Filter puzzles for the selected level
+                const chestPuzzles = allPuzzles.filter(p => p.level === level && p.type === 'chest');
+                const doorPuzzles = allPuzzles.filter(p => p.level === level && p.type === 'door');
+                // Randomly pick one of each
+                const randomChestPuzzle = chestPuzzles[Math.floor(Math.random() * chestPuzzles.length)];
+                const randomDoorPuzzle = doorPuzzles[Math.floor(Math.random() * doorPuzzles.length)];
+                currentLevelPuzzles = [randomChestPuzzle, randomDoorPuzzle];
+                
+                updateHUD();
+                
+                startScreen.classList.add('hidden');
+                gameScreen.classList.remove('hidden');
+                
+                startTimer();
+            }
+            
+            function startTimer() {
+                timerInterval = setInterval(() => {
+                    seconds++;
+                    timerEl.textContent = `${seconds}s`;
+                }, 1000);
+            }
+
+            function updateHUD() {
+                scoreEl.textContent = score;
+                livesEl.innerHTML = '';
+                for (let i = 0; i < 3; i++) {
+                    const heart = document.createElement('span');
+                    heart.innerHTML = '❤️';
+                    heart.classList.add('life-heart', 'text-2xl', 'drop-shadow-lg');
+                    if (i >= lives) {
+                        heart.classList.add('lost');
+                    }
+                    livesEl.appendChild(heart);
+                }
+            }
+
+            function showPuzzle(puzzle, puzzleObject) {
+                activePuzzleObject = puzzleObject;
+                puzzleQuestion.textContent = puzzle.question;
+                puzzleAnswerInput.value = '';
+                answerFeedback.textContent = '';
+                puzzleModal.classList.remove('hidden');
+                puzzleAnswerInput.focus();
+            }
+
+            function hidePuzzle() {
+                puzzleModal.classList.add('hidden');
+                activePuzzleObject = null;
+            }
+
+            function handleAnswerSubmit(e) {
+                e.preventDefault();
+                const userAnswer = puzzleAnswerInput.value.trim().toLowerCase();
+                const currentPuzzle = currentLevelPuzzles[currentPuzzleIndex];
+                
+                if (!userAnswer) return;
+
+                // Handle special cases like x^3
+                let sanitizedAnswer = currentPuzzle.answer;
+                if(sanitizedAnswer === 'x^3') {
+                   sanitizedAnswer = 'x**3';
+                }
+
+                if (userAnswer === sanitizedAnswer || userAnswer.replace(/\s/g, '') === currentPuzzle.answer.replace(/\s/g, '')) {
+                    // Correct Answer
+                    score += 100;
+                    currentPuzzleIndex++;
+                    activePuzzleObject.classList.add('unlocked');
+                    updateHUD();
+                    hidePuzzle();
+
+                    if (currentPuzzleIndex >= currentLevelPuzzles.length) {
+                        // Game Won
+                        endGame(true);
+                    }
+                } else {
+                    // Incorrect Answer
+                    lives--;
+                    updateHUD();
+                    answerFeedback.textContent = 'Incorrect! Try again.';
+                    puzzleModal.querySelector('.modal-content').classList.add('shake-animation');
+                    setTimeout(() => {
+                         puzzleModal.querySelector('.modal-content').classList.remove('shake-animation');
+                    }, 500);
+
+                    if (lives <= 0) {
+                        endGame(false);
+                    }
+                }
+            }
+
+            function endGame(isWin) {
+                clearInterval(timerInterval);
+                hidePuzzle();
+                gameScreen.classList.add('hidden');
+                endScreen.classList.remove('hidden');
+                
+                if (isWin) {
+                    endTitle.textContent = 'You Escaped!';
+                    endTitle.classList.remove('text-red-500');
+                    endTitle.classList.add('text-yellow-400');
+                    finalScore.parentElement.classList.remove('hidden');
+                } else {
+                    endTitle.textContent = 'Game Over';
+                    endTitle.classList.remove('text-yellow-400');
+                    endTitle.classList.add('text-red-500');
+                    finalScore.parentElement.classList.add('hidden');
+                }
+                
+                finalScore.textContent = score;
+                finalTime.textContent = `${seconds}s`;
+            }
+
+            // --- EVENT LISTENERS ---
+            levelSelectionButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const level = button.dataset.level;
+                    startGame(level);
+                });
+            });
+
+            chestEl.addEventListener('click', () => {
+                if (currentPuzzleIndex === 0 && !chestEl.classList.contains('unlocked')) {
+                    showPuzzle(currentLevelPuzzles[0], chestEl);
+                }
+            });
+
+            doorEl.addEventListener('click', () => {
+                if (currentPuzzleIndex === 1 && !doorEl.classList.contains('unlocked')) {
+                    showPuzzle(currentLevelPuzzles[1], doorEl);
+                } else if (currentPuzzleIndex < 1 && !doorEl.classList.contains('unlocked')) {
+                    // Feedback if chest is not solved yet
+                    doorEl.classList.add('shake-animation');
+                    setTimeout(() => doorEl.classList.remove('shake-animation'), 500);
+                }
+            });
+            
+            puzzleForm.addEventListener('submit', handleAnswerSubmit);
+
+            playAgainBtn.addEventListener('click', initGame);
+            
+            // --- INITIALIZE ---
+            initGame();
+        });
+    </script>
+</body>
+</html>

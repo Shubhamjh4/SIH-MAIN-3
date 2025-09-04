@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+{% load static %}
+{% load i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Rural Learning Platform{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/pankh-favicon.svg' %}">
+    <link rel="shortcut icon" type="image/svg+xml" href="{% static 'images/pankh-favicon.svg' %}">
+    <link rel="apple-touch-icon" href="{% static 'images/pankh-favicon.svg' %}">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-100">
+    <!-- Navigation -->
+    <nav class="bg-gradient-to-r from-indigo-600 to-purple-600 shadow-xl backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="{% url 'home' %}" class="flex items-center space-x-3 text-white text-xl font-bold hover:scale-105 transition-transform duration-300">
+                        <img src="{% static 'images/pankh-logo.jpg' %}" alt="Pankh Logo" class="h-8 w-8 object-contain rounded-full shadow-lg">
+                        <span class="bg-gradient-to-r from-white to-yellow-200 bg-clip-text text-transparent">Pankh</span>
+                    </a>
+                </div>
+                <div class="hidden md:flex items-center space-x-1">
+                    <a href="{% url 'courses:course-list' %}" class="text-white hover:text-yellow-200 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/10 hover:scale-105">{% trans "Courses" %}</a>
+                    <a href="{% url 'courses:games-list' %}" class="text-white hover:text-yellow-200 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/10 hover:scale-105">{% trans "Learn with Games" %}</a>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'courses:my-progress' %}" class="text-white hover:text-yellow-200 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/10 hover:scale-105">{% trans "My Progress" %}</a>
+                        <a href="{% url 'logout' %}" class="text-white hover:text-yellow-200 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/10 hover:scale-105">{% trans "Logout" %}</a>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="text-white hover:text-yellow-200 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-white/10 hover:scale-105">{% trans "Login" %}</a>
+                        <a href="{% url 'register' %}" class="bg-gradient-to-r from-yellow-400 to-yellow-500 text-indigo-900 hover:from-yellow-500 hover:to-yellow-600 px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">{% trans "Register" %}</a>
+                    {% endif %}
+                    <div class="ml-4">{% include 'partials/language_switcher.html' %}</div>
+                </div>
+                <!-- Mobile menu button -->
+                <div class="md:hidden flex items-center">
+                    <button type="button" class="text-white focus:outline-none hover:bg-white/10 p-2 rounded-lg transition-all duration-300" onclick="document.getElementById('mobileMenu').classList.toggle('hidden')">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile menu -->
+        <div id="mobileMenu" class="md:hidden hidden px-4 pb-3 space-y-2 bg-gradient-to-b from-indigo-700 to-purple-700">
+            <a href="{% url 'courses:course-list' %}" class="block text-white hover:text-yellow-200 px-4 py-3 rounded-lg transition-all duration-300 hover:bg-white/10">{% trans "Courses" %}</a>
+            <a href="{% url 'courses:games-list' %}" class="block text-white hover:text-yellow-200 px-4 py-3 rounded-lg transition-all duration-300 hover:bg-white/10">{% trans "Learn with Games" %}</a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'courses:my-progress' %}" class="block text-white hover:text-yellow-200 px-4 py-3 rounded-lg transition-all duration-300 hover:bg-white/10">{% trans "My Progress" %}</a>
+                <a href="{% url 'logout' %}" class="block text-white hover:text-yellow-200 px-4 py-3 rounded-lg transition-all duration-300 hover:bg-white/10">{% trans "Logout" %}</a>
+            {% else %}
+                <a href="{% url 'login' %}" class="block text-white hover:text-yellow-200 px-4 py-3 rounded-lg transition-all duration-300 hover:bg-white/10">{% trans "Login" %}</a>
+                <a href="{% url 'register' %}" class="inline-block mt-2 bg-gradient-to-r from-yellow-400 to-yellow-500 text-indigo-900 hover:from-yellow-500 hover:to-yellow-600 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 shadow-lg">{% trans "Register" %}</a>
+            {% endif %}
+            <div class="pt-2">{% include 'partials/language_switcher.html' %}</div>
+        </div>
+    </nav>
+
+    <!-- Page content -->
+    <main class="container mx-auto px-4 py-8">
+        {% if messages %}
+            <div class="mb-8">
+                {% for message in messages %}
+                    <div class="p-4 rounded-md {% if message.tags == 'error' %}bg-red-100 text-red-700{% elif message.tags == 'success' %}bg-green-100 text-green-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gradient-to-br from-gray-900 via-indigo-900 to-purple-900 text-white mt-16 relative overflow-hidden">
+        <!-- Background decoration -->
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="30" cy="30" r="2"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')"></div>
+        </div>
+        
+        <div class="relative max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="animate-fade-in-up">
+                    <div class="flex items-center space-x-3 mb-6">
+                        <img src="{% static 'images/pankh-logo.jpg' %}" alt="Pankh Logo" class="h-10 w-10 object-contain rounded-full shadow-lg">
+                        <h3 class="text-2xl font-bold bg-gradient-to-r from-white to-yellow-200 bg-clip-text text-transparent">Pankh</h3>
+                    </div>
+                    <p class="text-gray-300 leading-relaxed">{% trans "Empowering rural education through interactive and accessible learning. Join us in transforming lives through quality education." %}</p>
+                </div>
+                <div class="animate-fade-in-up">
+                    <h3 class="text-xl font-semibold mb-6 text-yellow-300">{% trans "Quick Links" %}</h3>
+                    <ul class="space-y-3">
+                        <li><a href="{% url 'courses:course-list' %}" class="text-gray-300 hover:text-yellow-300 transition-colors duration-300 flex items-center"><i class="fas fa-book mr-2"></i>{% trans "Courses" %}</a></li>
+                        <li><a href="{% url 'courses:games-list' %}" class="text-gray-300 hover:text-yellow-300 transition-colors duration-300 flex items-center"><i class="fas fa-gamepad mr-2"></i>{% trans "Learn with Games" %}</a></li>
+                        {% if user.is_authenticated %}
+                            <li><a href="{% url 'courses:my-progress' %}" class="text-gray-300 hover:text-yellow-300 transition-colors duration-300 flex items-center"><i class="fas fa-chart-line mr-2"></i>{% trans "My Progress" %}</a></li>
+                        {% else %}
+                            <li><a href="{% url 'login' %}" class="text-gray-300 hover:text-yellow-300 transition-colors duration-300 flex items-center"><i class="fas fa-sign-in-alt mr-2"></i>{% trans "Sign In" %}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="animate-fade-in-up">
+                    <h3 class="text-xl font-semibold mb-6 text-yellow-300">{% trans "Connect With Us" %}</h3>
+                    <p class="text-gray-300 mb-4">{% trans "Follow us on social media for updates and news" %}</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-12 h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
+                            <i class="fab fa-facebook text-lg"></i>
+                        </a>
+                        <a href="#" class="w-12 h-12 bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
+                            <i class="fab fa-twitter text-lg"></i>
+                        </a>
+                        <a href="#" class="w-12 h-12 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
+                            <i class="fab fa-instagram text-lg"></i>
+                        </a>
+                        <a href="#" class="w-12 h-12 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl">
+                            <i class="fab fa-youtube text-lg"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-12 pt-8 border-t border-gray-700 text-center">
+                <p class="text-gray-400">&copy; {% now "Y" %} Pankh - Rural Learning Platform. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Custom JS -->
+    <script src="{% static 'js/main.js' %}"></script>
+    <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register("{% static 'js/sw.js' %}");
+      });
+    }
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

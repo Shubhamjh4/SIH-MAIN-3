@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Solar System Explorer</title>
+    <style>
+        /* Basic CSS Reset */
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #000;
+            color: #fff;
+        }
+
+        /* Canvas for the 3D scene, fixed to the background */
+        #bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            outline: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Main container for UI elements */
+        .ui-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allows mouse events to pass through to the canvas */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Title and instructions styling */
+        .header {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 15px;
+            pointer-events: auto; /* Re-enable pointer events for this element */
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            margin: 5px 0 0;
+            font-size: 1rem;
+        }
+        
+        /* Information panel for displaying planet details */
+        #info-panel {
+            position: fixed;
+            bottom: -100%; /* Start off-screen */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 500px;
+            background: rgba(20, 20, 30, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 20px 20px 0 0;
+            padding: 25px;
+            box-sizing: border-box;
+            transition: bottom 0.5s ease-in-out;
+            pointer-events: auto;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #info-panel.visible {
+            bottom: 0;
+        }
+
+        #info-panel h2 {
+            margin-top: 0;
+            color: #ffcc00;
+        }
+
+        #info-panel p {
+            line-height: 1.6;
+        }
+
+        #close-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 18px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            line-height: 30px;
+            text-align: center;
+        }
+        
+        /* Quest panel for the mini-game */
+        #quest-panel {
+            background: rgba(0, 120, 255, 0.7);
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            box-shadow: 0 0 15px rgba(0, 120, 255, 0.5);
+            pointer-events: auto;
+        }
+        
+        /* Reward notification styling */
+        #reward-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0); /* Start scaled down and invisible */
+            background: linear-gradient(45deg, #ffde59, #ff914d);
+            color: #333;
+            padding: 20px 40px;
+            border-radius: 50px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            box-shadow: 0 5px 25px rgba(255, 215, 0, 0.5);
+            z-index: 100;
+            pointer-events: none; /* The notification itself is not clickable */
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.4s ease;
+        }
+
+        #reward-notification.visible {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        /* Loading screen */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.5rem;
+            z-index: 999;
+            transition: opacity 0.5s ease;
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- The canvas where the 3D scene will be rendered -->
+    <canvas id="bg"></canvas>
+
+    <!-- UI Elements that overlay the canvas -->
+    <div id="loader">Loading Solar System...</div>
+
+    <div class="ui-container">
+        <div class="header">
+            <h1>Solar System Explorer</h1>
+            <p>Click and drag to explore. Click on a planet to learn more.</p>
+        </div>
+
+        <div id="quest-panel"></div>
+    </div>
+    
+    <!-- This panel is hidden by default and shows planet information on click -->
+    <div id="info-panel">
+        <button id="close-button">&times;</button>
+        <h2 id="planet-name"></h2>
+        <p id="planet-fact"></p>
+    </div>
+
+    <!-- Reward notification element -->
+    <div id="reward-notification"></div>
+
+    <!-- Import Three.js and OrbitControls for camera movement -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- SCENE SETUP ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({
+            canvas: document.querySelector('#bg'),
+            antialias: true,
+        });
+
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.position.setZ(30);
+        camera.position.setY(10);
+        
+        // --- CONTROLS ---
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; // For a smoother camera motion
+
+        // --- LIGHTING ---
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.5); // Soft ambient light
+        scene.add(ambientLight);
+        // Point light for the sun
+        const pointLight = new THREE.PointLight(0xffffff, 2, 300);
+        scene.add(pointLight);
+
+        // --- DATA ---
+        // Planet data: name, color, size, orbital radius, speed, and a fun fact
+        const planetData = {
+            mercury: { name: "Mercury", color: 0x9E9E9E, size: 0.38, radius: 10, speed: 0.04, fact: "A year on Mercury is just 88 Earth days long, but a single day on Mercury lasts for 176 Earth days!" },
+            venus: { name: "Venus", color: 0xF8D8A8, size: 0.95, radius: 15, speed: 0.035, fact: "Venus is the hottest planet in our solar system, with surface temperatures hot enough to melt lead. It also spins backwards compared to most other planets." },
+            earth: { name: "Earth", color: 0x2090D0, size: 1, radius: 20, speed: 0.03, fact: "Earth is the only planet not named after a god. It is the densest planet in the solar system and the only one known to harbor life." },
+            mars: { name: "Mars", color: 0xD96F2B, size: 0.53, radius: 28, speed: 0.024, fact: "Mars is home to Olympus Mons, the largest volcano and tallest mountain in the solar system. It's about three times the height of Mount Everest." },
+            jupiter: { name: "Jupiter", color: 0xD8A868, size: 4, radius: 45, speed: 0.013, fact: "Jupiter is so big that all the other planets in the solar system could fit inside it. Its Great Red Spot is a giant storm that has been raging for hundreds of years." },
+            saturn: { name: "Saturn", color: 0xE6D0A2, size: 3.5, radius: 65, speed: 0.009, fact: "Saturn's rings are not solid; they are made up of billions of pieces of ice, rock, and dust. Saturn is the least dense planet; it would float in water!" },
+            uranus: { name: "Uranus", color: 0xAFDBF5, size: 2, radius: 80, speed: 0.006, fact: "Uranus is an ice giant that rotates on its side, with its equator nearly at a right angle to its orbit. This results in extreme seasons." },
+            neptune: { name: "Neptune", color: 0x3F5B98, size: 1.9, radius: 95, speed: 0.005, fact: "Neptune is the windiest planet in our solar system, with winds whipping clouds of frozen methane across the planet at speeds of more than 1,200 miles per hour." },
+        };
+
+        // --- OBJECT CREATION ---
+        const planets = [];
+        const orbits = [];
+
+        // Create the Sun
+        const sunGeometry = new THREE.SphereGeometry(5, 32, 32);
+        const sunMaterial = new THREE.MeshStandardMaterial({
+            emissive: 0xffdd00,
+            emissiveIntensity: 1.5,
+            color: 0xffdd00
+        });
+        const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+        sun.name = "Sun";
+        scene.add(sun);
+        
+        // Create planets and their orbits
+        Object.values(planetData).forEach(data => {
+            // Planet Mesh
+            const geometry = new THREE.SphereGeometry(data.size, 32, 32);
+            const material = new THREE.MeshStandardMaterial({ color: data.color });
+            const planet = new THREE.Mesh(geometry, material);
+            planet.name = data.name;
+            planet.userData = { fact: data.fact }; // Store fact in userData
+            
+            // Special case for Saturn's rings
+            if (data.name === "Saturn") {
+                const ringGeometry = new THREE.RingGeometry(data.size + 0.5, data.size + 2.5, 64);
+                const ringMaterial = new THREE.MeshStandardMaterial({ 
+                    color: 0x8A8370, 
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.7
+                });
+                const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+                ring.rotation.x = -Math.PI * 0.45; // Tilt the rings
+                planet.add(ring); // Add rings as a child of the planet
+            }
+
+            // Create a parent object for the orbit
+            const orbit = new THREE.Object3D();
+            orbit.add(planet);
+            scene.add(orbit);
+
+            planet.position.x = data.radius;
+
+            planets.push(planet);
+            orbits.push({ orbit, speed: data.speed });
+
+            // Create a visual ring for the orbit path
+            const ringGeometry = new THREE.RingGeometry(data.radius - 0.1, data.radius + 0.1, 128);
+            const ringMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, opacity: 0.2, transparent: true });
+            const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+            ring.rotation.x = -Math.PI / 2;
+            scene.add(ring);
+        });
+
+        // Add stars to the background
+        function addStar() {
+            const geometry = new THREE.SphereGeometry(0.1, 24, 24);
+            const material = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const star = new THREE.Mesh(geometry, material);
+
+            const [x, y, z] = Array(3).fill().map(() => THREE.MathUtils.randFloatSpread(500));
+            star.position.set(x, y, z);
+            scene.add(star);
+        }
+        Array(500).fill().forEach(addStar);
+        
+        // --- INTERACTIVITY (RAYCASTING) ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const infoPanel = document.getElementById('info-panel');
+        const planetNameEl = document.getElementById('planet-name');
+        const planetFactEl = document.getElementById('planet-fact');
+        const closeButton = document.getElementById('close-button');
+        const rewardNotification = document.getElementById('reward-notification');
+        
+        function onMouseClick(event) {
+            // Calculate mouse position in normalized device coordinates (-1 to +1)
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+            // Update the picking ray with the camera and mouse position
+            raycaster.setFromCamera(mouse, camera);
+
+            // Calculate objects intersecting the picking ray
+            const intersects = raycaster.intersectObjects([...planets, sun]);
+
+            if (intersects.length > 0) {
+                const clickedObject = intersects[0].object;
+                
+                // Handle gamified quest logic
+                if (currentQuestPlanet && clickedObject.name === currentQuestPlanet) {
+                    questPanel.textContent = `Correct! You found ${currentQuestPlanet}.`;
+                    showReward();
+                    currentQuestPlanet = null; // Prevent multiple rewards for the same quest
+                    setTimeout(startNewQuest, 2000); // Start new quest after 2 seconds
+                }
+
+                // Display info panel
+                if(clickedObject.name !== "Sun") {
+                    planetNameEl.textContent = clickedObject.name;
+                    planetFactEl.textContent = clickedObject.userData.fact;
+                    infoPanel.classList.add('visible');
+                } else {
+                     planetNameEl.textContent = "The Sun";
+                     planetFactEl.textContent = "The Sun is a star at the center of our Solar System. It is a nearly perfect ball of hot plasma, heated to incandescence by nuclear fusion reactions in its core.";
+                     infoPanel.classList.add('visible');
+                }
+            }
+        }
+        
+        closeButton.addEventListener('click', () => {
+            infoPanel.classList.remove('visible');
+        });
+
+        window.addEventListener('click', onMouseClick);
+        
+        // --- GAMIFICATION ---
+        const questPanel = document.getElementById('quest-panel');
+        const planetNames = Object.values(planetData).map(p => p.name);
+        let currentQuestPlanet = null;
+
+        function startNewQuest() {
+            const randomIndex = Math.floor(Math.random() * planetNames.length);
+            currentQuestPlanet = planetNames[randomIndex];
+            questPanel.textContent = `Let's find... ${currentQuestPlanet}!`;
+        }
+
+        function showReward() {
+            rewardNotification.textContent = 'Awesome! You earned a star! ⭐';
+            rewardNotification.classList.add('visible');
+            
+            // Hide the reward notification after a couple of seconds
+            setTimeout(() => {
+                rewardNotification.classList.remove('visible');
+            }, 1800); // Hide it slightly before the next quest starts
+        }
+
+        // --- ANIMATION LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Animate orbits
+            orbits.forEach(item => {
+                item.orbit.rotation.y += item.speed * 0.1;
+            });
+            
+            // Animate self-rotation
+            planets.forEach(planet => {
+                planet.rotation.y += 0.005;
+            });
+            sun.rotation.y += 0.001;
+
+            controls.update(); // Update camera controls
+            renderer.render(scene, camera);
+        }
+
+        // --- RESIZE HANDLER ---
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        window.addEventListener('resize', onWindowResize);
+        
+        // --- INITIALIZATION ---
+        // Hide loader and start game when everything is ready
+        window.onload = () => {
+            document.getElementById('loader').style.opacity = '0';
+            // Wait for fade-out transition before removing the loader
+            setTimeout(() => {
+                document.getElementById('loader').style.display = 'none';
+                startNewQuest();
+                animate();
+            }, 500);
+        };
+    </script>
+</body>
+</html>
+

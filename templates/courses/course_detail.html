@@ -1,0 +1,164 @@
+{% extends "courses/base_courses.html" %}
+{% load static %}
+
+{% block courses_content %}
+<!-- Course Hero Section -->
+<div class="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-12 mb-8 rounded-3xl">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex-1 animate-fade-in-up">
+                <div class="flex items-center mb-4">
+                    <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-white text-indigo-700 border border-indigo-200 shadow-sm">
+                        <i class="fas fa-tag mr-2"></i>{{ course.subject.name }}
+                    </span>
+                    <span class="ml-3 inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
+                        {{ course.difficulty_level }}
+                    </span>
+                </div>
+                <h1 class="text-4xl font-extrabold text-gray-900 sm:text-5xl mb-4">
+                    <span class="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                        {{ course.title }}
+                    </span>
+                </h1>
+                <p class="text-xl text-gray-600 mb-6 max-w-3xl">{{ course.description }}</p>
+                
+                {% if progress %}
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-gray-700">Course Progress</span>
+                        <span class="text-sm font-semibold text-indigo-600">{{ progress.percentage }}% Complete</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-3 rounded-full transition-all duration-500" style="width: {{ progress.percentage }}%"></div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="lg:ml-8 animate-fade-in-right">
+                <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                    <div class="flex flex-col space-y-4">
+                        {% if user.is_authenticated %}
+                            {% if is_enrolled %}
+                                <span class="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold">
+                                    <i class="fas fa-check-circle mr-2"></i>Enrolled
+                                </span>
+                            {% else %}
+                                <form method="post" action="#" onsubmit="event.preventDefault(); fetch('{% url 'courses:course-enroll' course.pk %}', {method: 'POST', headers: {'X-CSRFToken': '{{ csrf_token }}'}}).then(()=>location.reload())">
+                                    {% csrf_token %}
+                                    <button type="submit" class="w-full inline-flex items-center justify-center px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg">
+                                        <i class="fas fa-user-plus mr-2"></i>Enroll Now
+                                    </button>
+                                </form>
+                            {% endif %}
+                        {% endif %}
+                        
+                        {% if course.is_offline_available %}
+                        <a href="{% url 'courses:course-download' course.pk %}" class="w-full inline-flex items-center justify-center px-6 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg">
+                            <i class="fas fa-download mr-2"></i>Download Course
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Lessons Section -->
+      <div class="lg:col-span-2 animate-fade-in-up">
+        <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+            <i class="fas fa-play-circle mr-3 text-indigo-600"></i>Course Lessons
+          </h2>
+          <div class="space-y-4">
+            {% for lesson in lessons %}
+            <a href="{% url 'courses:lesson-detail' lesson.pk %}" class="group block bg-gradient-to-r from-gray-50 to-blue-50 border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-indigo-300 transition-all duration-300 transform hover:-translate-y-1">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                  <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <i class="fas fa-play text-white text-lg"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors duration-300">{{ lesson.title }}</h3>
+                    <p class="text-sm text-gray-600 mt-1">{{ lesson.description|default:lesson.content|truncatewords:20 }}</p>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                  {% if lesson.id in completed_lesson_ids %}
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-green-500 to-emerald-600 text-white">
+                    <i class="fas fa-check mr-1"></i>Completed
+                  </span>
+                  {% endif %}
+                  <i class="fas fa-chevron-right text-gray-400 group-hover:text-indigo-500 transition-colors duration-300"></i>
+                </div>
+              </div>
+            </a>
+            {% empty %}
+            <div class="text-center py-12">
+              <div class="w-16 h-16 bg-gradient-to-br from-gray-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-book-open text-2xl text-gray-400"></i>
+              </div>
+              <h3 class="text-lg font-medium text-gray-900 mb-2">No lessons available yet</h3>
+              <p class="text-gray-500">Lessons will be added soon!</p>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="animate-fade-in-right">
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-lg sticky top-8">
+          <h3 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
+            <i class="fas fa-info-circle mr-3 text-indigo-600"></i>Course Information
+          </h3>
+          <dl class="space-y-4 text-sm">
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <dt class="text-gray-600 flex items-center">
+                <i class="fas fa-tag mr-2 text-indigo-500"></i>Subject
+              </dt>
+              <dd class="font-semibold text-gray-900">{{ course.subject.name }}</dd>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <dt class="text-gray-600 flex items-center">
+                <i class="fas fa-play-circle mr-2 text-indigo-500"></i>Lessons
+              </dt>
+              <dd class="font-semibold text-gray-900">{{ lessons|length }}</dd>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <dt class="text-gray-600 flex items-center">
+                <i class="fas fa-question-circle mr-2 text-purple-500"></i>Quizzes
+              </dt>
+              <dd class="font-semibold text-gray-900">{{ quizzes|length }}</dd>
+            </div>
+          </dl>
+          
+          <div class="mt-6 space-y-3">
+            {% if user.is_authenticated %}
+              {% if is_enrolled %}
+                <span class="w-full inline-flex justify-center items-center px-4 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold">
+                  <i class="fas fa-check-circle mr-2"></i>Enrolled
+                </span>
+              {% else %}
+                <form method="post" action="#" onsubmit="event.preventDefault(); fetch('{% url 'courses:course-enroll' course.pk %}', {method: 'POST', headers: {'X-CSRFToken': '{{ csrf_token }}'}}).then(()=>location.reload())">
+                  {% csrf_token %}
+                  <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg">
+                    <i class="fas fa-user-plus mr-2"></i>Enroll in this course
+                  </button>
+                </form>
+              {% endif %}
+            {% endif %}
+            {% if course.is_offline_available %}
+              <a href="{% url 'courses:course-download' course.pk %}" class="w-full inline-flex justify-center items-center px-4 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg">
+                <i class="fas fa-download mr-2"></i>Download for Offline Use
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Battle Arena</title>
+    <!-- Tailwind CSS for rapid UI development -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font for a retro game feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles and animations */
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .screen {
+            background: rgba(0, 0, 0, 0.7);
+            border: 4px solid #4a4a4a;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+        }
+        
+        .character-card, .level-card {
+            border: 2px solid #666;
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .character-card:hover, .level-card:hover, .character-card.selected, .level-card.selected {
+            transform: scale(1.05);
+            border-color: #00ff9d;
+            box-shadow: 0 0 15px #00ff9d;
+            cursor: pointer;
+        }
+
+        .health-bar-container {
+            background-color: #333;
+            border: 2px solid #555;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .health-bar {
+            background: linear-gradient(90deg, #ff4141, #ff8484);
+            height: 100%;
+            width: 100%;
+            transition: width 0.5s ease-in-out;
+        }
+        
+        .player .health-bar {
+             background: linear-gradient(90deg, #38bdf8, #7dd3fc);
+        }
+
+        /* Animations */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+        }
+        .shake { animation: shake 0.3s ease-in-out; }
+
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
+        }
+        .flash { animation: flash 0.3s linear; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .character-sprite {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .powerup-icon {
+            filter: grayscale(1);
+            opacity: 0.5;
+            transition: all 0.3s;
+        }
+
+        .powerup-icon.unlocked {
+            filter: grayscale(0);
+            opacity: 1;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 flex items-center justify-center min-h-screen">
+
+    <!-- Character & Level Selection Screen -->
+    <div id="selection-screen" class="screen container mx-auto p-8 text-center">
+        <h1 class="text-4xl md:text-5xl mb-4 text-cyan-400">Math Battle Arena</h1>
+        <p class="mb-8 text-gray-400">Choose your warrior and your challenge!</p>
+        
+        <!-- Character Selection -->
+        <h2 class="text-2xl mb-4 text-yellow-400">Select Character</h2>
+        <div id="character-options" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="character-card bg-gray-800 p-4 rounded-lg" data-char="Knight">
+                <img src="https://placehold.co/150x150/3498db/ffffff?text=Knight&font=pressstart2p" alt="Knight" class="mx-auto mb-2 rounded-full border-4 border-gray-600">
+                <h3 class="text-xl">Knight</h3>
+            </div>
+            <div class="character-card bg-gray-800 p-4 rounded-lg" data-char="Ninja">
+                <img src="https://placehold.co/150x150/2c3e50/ffffff?text=Ninja&font=pressstart2p" alt="Ninja" class="mx-auto mb-2 rounded-full border-4 border-gray-600">
+                <h3 class="text-xl">Ninja</h3>
+            </div>
+            <div class="character-card bg-gray-800 p-4 rounded-lg" data-char="Wizard">
+                <img src="https://placehold.co/150x150/9b59b6/ffffff?text=Wizard&font=pressstart2p" alt="Wizard" class="mx-auto mb-2 rounded-full border-4 border-gray-600">
+                <h3 class="text-xl">Wizard</h3>
+            </div>
+        </div>
+        
+        <!-- Level Selection -->
+        <h2 class="text-2xl mb-4 text-yellow-400">Select Class Level</h2>
+        <div id="level-options" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+             <div class="level-card bg-gray-800 p-4 rounded-lg" data-level="6-7">Class 6-7<span class="block text-xs text-gray-400">Arithmetic</span></div>
+             <div class="level-card bg-gray-800 p-4 rounded-lg" data-level="8-9">Class 8-9<span class="block text-xs text-gray-400">Algebra</span></div>
+             <div class="level-card bg-gray-800 p-4 rounded-lg" data-level="10">Class 10<span class="block text-xs text-gray-400">Quadratics</span></div>
+             <div class="level-card bg-gray-800 p-4 rounded-lg" data-level="11-12">Class 11-12<span class="block text-xs text-gray-400">Calculus</span></div>
+        </div>
+
+        <button id="start-game-btn" class="bg-green-600 text-white py-3 px-8 rounded-lg text-2xl hover:bg-green-700 transition duration-300 disabled:bg-gray-500 disabled:cursor-not-allowed">Start Battle</button>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="hidden screen container mx-auto p-4 md:p-8">
+        <!-- Arena with Player and Enemy -->
+        <div class="grid grid-cols-2 gap-4 md:gap-8 items-center mb-6">
+            <!-- Player -->
+            <div class="player text-center">
+                <h2 id="player-name" class="text-xl md:text-2xl mb-2 text-cyan-400">Player</h2>
+                <div class="health-bar-container w-full h-6 mb-2">
+                    <div id="player-health-bar" class="health-bar"></div>
+                </div>
+                <p id="player-health-text" class="text-sm mb-4"></p>
+                <img id="player-sprite" src="" alt="Player" class="character-sprite mx-auto w-32 h-32 md:w-48 md:h-48">
+            </div>
+            <!-- Enemy -->
+            <div class="enemy text-center">
+                <h2 id="enemy-name" class="text-xl md:text-2xl mb-2 text-red-500">Enemy</h2>
+                <div class="health-bar-container w-full h-6 mb-2">
+                    <div id="enemy-health-bar" class="health-bar"></div>
+                </div>
+                <p id="enemy-health-text" class="text-sm mb-4"></p>
+                <img id="enemy-sprite" src="" alt="Enemy" class="character-sprite mx-auto w-32 h-32 md:w-48 md:h-48">
+            </div>
+        </div>
+
+        <!-- Math Question & Answer -->
+        <div class="bg-gray-800 p-6 rounded-lg border-2 border-gray-600 text-center">
+            <p class="text-lg md:text-2xl text-yellow-400 mb-4" id="math-question">What is 5 + 3?</p>
+            <form id="answer-form">
+                <input type="text" id="answer-input" class="w-full md:w-1/2 text-center bg-gray-900 border-2 border-gray-500 rounded-lg p-3 text-2xl focus:outline-none focus:border-cyan-400" autocomplete="off">
+                <button type="submit" class="w-full md:w-auto mt-4 md:mt-0 md:ml-4 bg-cyan-500 text-white py-3 px-6 rounded-lg text-xl hover:bg-cyan-600">Attack!</button>
+            </form>
+            <p id="feedback" class="mt-2 h-6 text-lg"></p>
+        </div>
+
+        <!-- Power-ups & Scoreboard -->
+        <div class="mt-6 flex flex-col md:flex-row justify-between items-center text-center">
+             <div class="powerups">
+                <h3 class="text-lg mb-2 text-yellow-400">Power-ups</h3>
+                <div class="flex gap-4">
+                    <div id="powerup-double-damage" class="powerup-icon bg-gray-700 p-2 rounded-lg" title="Double Damage (3 correct in a row)">⚔️</div>
+                    <div id="powerup-heal" class="powerup-icon bg-gray-700 p-2 rounded-lg" title="Heal (5 correct in a row)">❤️</div>
+                </div>
+            </div>
+            <div class="scoreboard mt-4 md:mt-0">
+                <h3 class="text-lg mb-2 text-yellow-400">Streak</h3>
+                <p id="streak-counter" class="text-3xl text-cyan-400">0</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- End Screen -->
+    <div id="end-screen" class="hidden absolute inset-0 bg-black bg-opacity-80 flex items-center justify-center">
+        <div class="screen text-center p-8">
+            <h2 id="end-message" class="text-5xl mb-6">You Win!</h2>
+            <div id="end-stats" class="text-lg mb-8">
+                <p>Time: <span id="time-stat" class="text-yellow-400"></span></p>
+                <p>Correct Streak: <span id="streak-stat" class="text-cyan-400"></span></p>
+            </div>
+            <button id="play-again-btn" class="bg-blue-600 text-white py-3 px-8 rounded-lg text-2xl hover:bg-blue-700">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const selectionScreen = document.getElementById('selection-screen');
+            const gameScreen = document.getElementById('game-screen');
+            const endScreen = document.getElementById('end-screen');
+
+            const characterOptions = document.getElementById('character-options');
+            const levelOptions = document.getElementById('level-options');
+            const startGameBtn = document.getElementById('start-game-btn');
+
+            const playerNameEl = document.getElementById('player-name');
+            const playerHealthBar = document.getElementById('player-health-bar');
+            const playerHealthText = document.getElementById('player-health-text');
+            const playerSprite = document.getElementById('player-sprite');
+            
+            const enemyNameEl = document.getElementById('enemy-name');
+            const enemyHealthBar = document.getElementById('enemy-health-bar');
+            const enemyHealthText = document.getElementById('enemy-health-text');
+            const enemySprite = document.getElementById('enemy-sprite');
+
+            const mathQuestion = document.getElementById('math-question');
+            const answerForm = document.getElementById('answer-form');
+            const answerInput = document.getElementById('answer-input');
+            const feedbackEl = document.getElementById('feedback');
+            
+            const streakCounter = document.getElementById('streak-counter');
+            const powerupDoubleDamage = document.getElementById('powerup-double-damage');
+            const powerupHeal = document.getElementById('powerup-heal');
+
+            const endMessage = document.getElementById('end-message');
+            const timeStat = document.getElementById('time-stat');
+            const streakStat = document.getElementById('streak-stat');
+            const playAgainBtn = document.getElementById('play-again-btn');
+
+            // --- Game State & Config ---
+            let gameState = {
+                character: null,
+                level: null,
+                playerHealth: 100,
+                enemyHealth: 100,
+                playerMaxHealth: 100,
+                enemyMaxHealth: 100,
+                streak: 0,
+                maxStreak: 0,
+                startTime: null,
+                currentAnswer: null,
+                isDoubleDamageActive: false,
+                isPlayerTurn: true,
+            };
+
+            const CHARACTERS = {
+                Knight: { name: 'Knight', img: 'https://placehold.co/150x150/3498db/ffffff?text=Knight&font=pressstart2p' },
+                Ninja: { name: 'Ninja', img: 'https://placehold.co/150x150/2c3e50/ffffff?text=Ninja&font=pressstart2p' },
+                Wizard: { name: 'Wizard', img: 'https://placehold.co/150x150/9b59b6/ffffff?text=Wizard&font=pressstart2p' },
+            };
+            const ENEMIES = {
+                '6-7': { name: 'Slime', img: 'https://placehold.co/150x150/2ecc71/ffffff?text=Slime&font=pressstart2p' },
+                '8-9': { name: 'Goblin', img: 'https://placehold.co/150x150/e67e22/ffffff?text=Goblin&font=pressstart2p' },
+                '10': { name: 'Orc', img: 'https://placehold.co/150x150/c0392b/ffffff?text=Orc&font=pressstart2p' },
+                '11-12': { name: 'Dragon', img: 'https://placehold.co/150x150/8e44ad/ffffff?text=Dragon&font=pressstart2p' },
+            };
+
+            // --- Event Listeners ---
+            characterOptions.addEventListener('click', (e) => {
+                const card = e.target.closest('.character-card');
+                if (card) {
+                    gameState.character = card.dataset.char;
+                    document.querySelectorAll('.character-card').forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    checkSelections();
+                }
+            });
+
+            levelOptions.addEventListener('click', (e) => {
+                const card = e.target.closest('.level-card');
+                if (card) {
+                    gameState.level = card.dataset.level;
+                    document.querySelectorAll('.level-card').forEach(l => l.classList.remove('selected'));
+                    card.classList.add('selected');
+                    checkSelections();
+                }
+            });
+
+            startGameBtn.addEventListener('click', startGame);
+            answerForm.addEventListener('submit', handleAnswer);
+            playAgainBtn.addEventListener('click', () => location.reload());
+
+            powerupDoubleDamage.addEventListener('click', () => {
+                if (powerupDoubleDamage.classList.contains('unlocked')) {
+                    gameState.isDoubleDamageActive = true;
+                    powerupDoubleDamage.classList.remove('unlocked');
+                    feedbackEl.textContent = "Double Damage active!";
+                }
+            });
+
+            powerupHeal.addEventListener('click', () => {
+                if (powerupHeal.classList.contains('unlocked')) {
+                    updatePlayerHealth(25);
+                    powerupHeal.classList.remove('unlocked');
+                    feedbackEl.textContent = "You healed!";
+                }
+            });
+
+            // --- Game Logic ---
+            function checkSelections() {
+                startGameBtn.disabled = !(gameState.character && gameState.level);
+            }
+
+            function startGame() {
+                selectionScreen.classList.add('hidden');
+                gameScreen.classList.remove('hidden');
+                
+                // Reset state
+                gameState.playerHealth = 100;
+                gameState.enemyHealth = 100;
+                gameState.streak = 0;
+                gameState.maxStreak = 0;
+                gameState.startTime = Date.now();
+                gameState.isPlayerTurn = true;
+                
+                // Setup UI
+                const player = CHARACTERS[gameState.character];
+                const enemy = ENEMIES[gameState.level];
+                playerNameEl.textContent = player.name;
+                playerSprite.src = player.img;
+                enemyNameEl.textContent = enemy.name;
+                enemySprite.src = enemy.img;
+                
+                updateHealthBars();
+                nextQuestion();
+            }
+            
+            function handleAnswer(e) {
+                e.preventDefault();
+                if (!gameState.isPlayerTurn) return;
+
+                const userAnswer = parseFloat(answerInput.value);
+                if (isNaN(userAnswer)) {
+                    feedbackEl.textContent = "Please enter a number.";
+                    feedbackEl.classList.add('text-red-500');
+                    return;
+                }
+
+                gameState.isPlayerTurn = false;
+                feedbackEl.classList.remove('text-red-500', 'text-green-500');
+
+                if (Math.abs(userAnswer - gameState.currentAnswer) < 0.01) { // Tolerate floating point errors
+                    feedbackEl.textContent = "Correct!";
+                    feedbackEl.classList.add('text-green-500');
+                    playerAttack();
+                } else {
+                    feedbackEl.textContent = `Wrong! The answer was ${gameState.currentAnswer}`;
+                    feedbackEl.classList.add('text-red-500');
+                    enemyAttack();
+                }
+                answerInput.value = '';
+            }
+
+            function playerAttack() {
+                let damage = 10 + Math.floor(Math.random() * 6); // 10-15 damage
+                if (gameState.isDoubleDamageActive) {
+                    damage *= 2;
+                    gameState.isDoubleDamageActive = false;
+                }
+                
+                playerSprite.classList.add('flash');
+                setTimeout(() => playerSprite.classList.remove('flash'), 300);
+
+                updateEnemyHealth(-damage);
+                updateStreak(true);
+                
+                setTimeout(() => {
+                    if (gameState.enemyHealth > 0) {
+                        nextQuestion();
+                    }
+                }, 1000);
+            }
+            
+            function enemyAttack() {
+                const damage = 12 + Math.floor(Math.random() * 5); // 12-16 damage
+                enemySprite.classList.add('flash');
+                setTimeout(() => enemySprite.classList.remove('flash'), 300);
+
+                updatePlayerHealth(-damage);
+                updateStreak(false);
+
+                setTimeout(() => {
+                    if (gameState.playerHealth > 0) {
+                        nextQuestion();
+                    }
+                }, 1000);
+            }
+
+            function updateStreak(correct) {
+                if (correct) {
+                    gameState.streak++;
+                    if (gameState.streak > gameState.maxStreak) {
+                        gameState.maxStreak = gameState.streak;
+                    }
+                } else {
+                    gameState.streak = 0;
+                }
+                streakCounter.textContent = gameState.streak;
+                
+                // Power-ups
+                if (gameState.streak >= 3) powerupDoubleDamage.classList.add('unlocked');
+                if (gameState.streak >= 5) powerupHeal.classList.add('unlocked');
+                if (!correct) {
+                    powerupDoubleDamage.classList.remove('unlocked');
+                    powerupHeal.classList.remove('unlocked');
+                }
+            }
+
+            function updatePlayerHealth(amount) {
+                gameState.playerHealth += amount;
+                if (gameState.playerHealth < 0) gameState.playerHealth = 0;
+                if (gameState.playerHealth > gameState.playerMaxHealth) gameState.playerHealth = gameState.playerMaxHealth;
+                
+                playerSprite.parentElement.classList.add('shake');
+                setTimeout(() => playerSprite.parentElement.classList.remove('shake'), 300);
+
+                updateHealthBars();
+                if (gameState.playerHealth <= 0) {
+                    endGame(false);
+                }
+            }
+
+            function updateEnemyHealth(amount) {
+                gameState.enemyHealth += amount;
+                if (gameState.enemyHealth < 0) gameState.enemyHealth = 0;
+
+                enemySprite.parentElement.classList.add('shake');
+                setTimeout(() => enemySprite.parentElement.classList.remove('shake'), 300);
+
+                updateHealthBars();
+                if (gameState.enemyHealth <= 0) {
+                    endGame(true);
+                }
+            }
+
+            function updateHealthBars() {
+                const playerHealthPercent = (gameState.playerHealth / gameState.playerMaxHealth) * 100;
+                playerHealthBar.style.width = `${playerHealthPercent}%`;
+                playerHealthText.textContent = `${gameState.playerHealth} / ${gameState.playerMaxHealth}`;
+                
+                const enemyHealthPercent = (gameState.enemyHealth / gameState.enemyMaxHealth) * 100;
+                enemyHealthBar.style.width = `${enemyHealthPercent}%`;
+                enemyHealthText.textContent = `${gameState.enemyHealth} / ${gameState.enemyMaxHealth}`;
+            }
+
+            function nextQuestion() {
+                const questionData = generateMathQuestion(gameState.level);
+                mathQuestion.textContent = questionData.q;
+                gameState.currentAnswer = questionData.a;
+                gameState.isPlayerTurn = true;
+                answerInput.focus();
+            }
+
+            function endGame(playerWon) {
+                gameScreen.classList.add('hidden');
+                endScreen.classList.remove('hidden');
+
+                if (playerWon) {
+                    endMessage.textContent = "You Win!";
+                    endMessage.classList.add('text-green-500');
+                } else {
+                    endMessage.textContent = "You Lose!";
+                    endMessage.classList.add('text-red-500');
+                }
+
+                const timeTaken = ((Date.now() - gameState.startTime) / 1000).toFixed(2);
+                timeStat.textContent = `${timeTaken}s`;
+                streakStat.textContent = gameState.maxStreak;
+            }
+
+            // --- Math Question Generator ---
+            function generateMathQuestion(level) {
+                const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+                let q = '';
+                let a = 0;
+
+                switch (level) {
+                    case '6-7': {
+                        const operations = ['+', '-', '*', '/'];
+                        const op = operations[rand(0, 3)];
+                        let n1 = rand(1, 20), n2 = rand(1, 20);
+                        if (op === '+') { q = `${n1} + ${n2} = ?`; a = n1 + n2; }
+                        else if (op === '-') { if(n1<n2) [n1, n2] = [n2, n1]; q = `${n1} - ${n2} = ?`; a = n1 - n2; }
+                        else if (op === '*') { n1 = rand(2,10); n2=rand(2,10); q = `${n1} * ${n2} = ?`; a = n1 * n2; }
+                        else { n2 = rand(2, 10); n1 = n2 * rand(2, 10); q = `${n1} / ${n2} = ?`; a = n1 / n2; }
+                        break;
+                    }
+                    case '8-9': { // ax + b = c
+                        const n1 = rand(2, 5); // a
+                        const n2 = rand(1, 10); // x
+                        const n3 = rand(1, 10); // b
+                        const n4 = n1 * n2 + n3; // c
+                        q = `${n1}x + ${n3} = ${n4}. Solve for x.`;
+                        a = n2;
+                        break;
+                    }
+                    case '10': { // x^2 - (r1+r2)x + r1*r2 = 0
+                        const r1 = rand(1, 5);
+                        const r2 = rand(r1, 7);
+                        const b = -(r1 + r2);
+                        const c = r1 * r2;
+                        q = `x² ${b}x + ${c} = 0. What's the smallest root?`;
+                        a = r1;
+                        break;
+                    }
+                    case '11-12': { // Derivative of ax^n
+                        const n1 = rand(2, 5); // a
+                        const n2 = rand(2, 5); // n
+                        q = `What's the derivative of ${n1}x^${n2} at x=2?`;
+                        a = n1 * n2 * Math.pow(2, n2 - 1);
+                        break;
+                    }
+                }
+                return { q, a };
+            }
+
+            // Initial setup
+            startGameBtn.disabled = true;
+        });
+    </script>
+</body>
+</html>

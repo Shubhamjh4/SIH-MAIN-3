@@ -1,0 +1,64 @@
+{% extends "courses/base_courses.html" %}
+
+{% block courses_content %}
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <nav class="text-sm text-gray-500">
+    <a href="{% url 'courses:subject-detail' lesson.course.subject.pk %}" class="hover:text-gray-700">{{ lesson.course.subject.name }}</a>
+    <span class="mx-1">/</span>
+    <a href="{% url 'courses:course-detail' lesson.course.pk %}" class="hover:text-gray-700">{{ lesson.course.title }}</a>
+    <span class="mx-1">/</span>
+    <span class="text-gray-700">{{ lesson.title }}</span>
+  </nav>
+
+  <div class="mt-4 bg-white border border-gray-200 rounded-lg p-6">
+    <div class="flex items-center justify-between">
+      <h1 class="text-xl font-semibold text-gray-900">{{ lesson.title }}</h1>
+      <div class="flex gap-2">
+        <a href="{% url 'courses:lesson-download' lesson.pk %}" class="inline-flex items-center px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium">Download Lesson (PDF)</a>
+        {% if user.is_authenticated %}
+          {% if progress and progress.completed %}
+            <span class="inline-flex items-center px-4 py-2 rounded-md bg-green-100 text-green-800 text-sm font-medium">Completed</span>
+          {% else %}
+            <form method="post" action="{% url 'courses:mark-lesson-complete' lesson.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="inline-flex items-center px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium">Mark as complete</button>
+            </form>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    {% if lesson.content_file %}
+    <div class="mt-4">
+      {% if is_pdf %}
+        <embed src="{{ lesson.content_file.url }}" type="application/pdf" width="100%" height="600px">
+      {% elif is_video %}
+        <video controls class="w-full rounded">
+          <source src="{{ lesson.content_file.url }}" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+      {% else %}
+        <a href="{{ lesson.content_file.url }}" class="inline-flex items-center px-4 py-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium" target="_blank">Download Content</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="prose max-w-none mt-6">{{ lesson.content|safe }}</div>
+  </div>
+
+  <div class="mt-4 flex items-center justify-between">
+    {% with prev_lesson=lesson.get_previous_in_order next_lesson=lesson.get_next_in_order %}
+      <div>
+        {% if prev_lesson %}
+        <a href="{% url 'courses:lesson-detail' prev_lesson.pk %}" class="inline-flex items-center px-4 py-2 rounded-md bg-white border border-gray-200 hover:shadow text-sm">&larr; Previous Lesson</a>
+        {% endif %}
+      </div>
+      <div>
+        {% if next_lesson %}
+        <a href="{% url 'courses:lesson-detail' next_lesson.pk %}" class="inline-flex items-center px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white text-sm">Next Lesson &rarr;</a>
+        {% endif %}
+      </div>
+    {% endwith %}
+  </div>
+</div>
+{% endblock %}

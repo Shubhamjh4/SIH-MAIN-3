@@ -1,0 +1,78 @@
+{% load i18n %}
+<div class="relative inline-block text-left" x-data="{ open: false }" x-init="setTimeout(() => { if (typeof Alpine === 'undefined') { initFallback(); } }, 100)">
+    <div>
+        <button type="button" 
+                @click="open = !open"
+                @click.away="open = false"
+                onclick="toggleLanguageMenu()"
+                class="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            <i class="fas fa-globe mr-2"></i>
+            {% get_current_language as LANGUAGE_CODE %}
+            {% if LANGUAGE_CODE == 'en' %}
+                English
+            {% elif LANGUAGE_CODE == 'hi' %}
+                हिन्दी
+            {% elif LANGUAGE_CODE == 'or' %}
+                ଓଡ଼ିଆ
+            {% else %}
+                English
+            {% endif %}
+            <i class="fas fa-chevron-down ml-2"></i>
+        </button>
+    </div>
+    
+    <div x-show="open" 
+         x-transition:enter="transition ease-out duration-100"
+         x-transition:enter-start="transform opacity-0 scale-95"
+         x-transition:enter-end="transform opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-75"
+         x-transition:leave-start="transform opacity-100 scale-100"
+         x-transition:leave-end="transform opacity-0 scale-95"
+         id="language-menu-fallback"
+         class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+         style="display: none;">
+        <div class="py-1" role="none">
+            <a href="/i18n/setlang/?language=en&next={{ request.get_full_path|urlencode }}" 
+               class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" 
+               role="menuitem">
+                <i class="fas fa-flag-usa mr-2"></i> English
+            </a>
+            
+            <a href="/i18n/setlang/?language=hi&next={{ request.get_full_path|urlencode }}" 
+               class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" 
+               role="menuitem">
+                <i class="fas fa-flag mr-2"></i> हिन्दी
+            </a>
+            
+            <a href="/i18n/setlang/?language=or&next={{ request.get_full_path|urlencode }}" 
+               class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" 
+               role="menuitem">
+                <i class="fas fa-flag mr-2"></i> ଓଡ଼ିଆ
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleLanguageMenu() {
+    const menu = document.getElementById('language-menu-fallback');
+    if (menu) {
+        if (menu.style.display === 'none' || menu.style.display === '') {
+            menu.style.display = 'block';
+        } else {
+            menu.style.display = 'none';
+        }
+    }
+}
+
+function initFallback() {
+    // Fallback for when Alpine.js is not available
+    document.addEventListener('click', function(event) {
+        const menu = document.getElementById('language-menu-fallback');
+        const button = event.target.closest('button');
+        if (menu && !menu.contains(event.target) && !button) {
+            menu.style.display = 'none';
+        }
+    });
+}
+</script>

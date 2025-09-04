@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Science Explorer Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #1a2a40;
+            --secondary-bg: #2a3a50;
+            --text-color: #f0f4f8;
+            --accent-color: #4dd0e1;
+            --correct-color: #81c784;
+            --incorrect-color: #e57373;
+            --border-radius: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* Background starfield effect */
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(1px 1px at 20px 30px, #eee, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 50px 160px, #ddd, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 150px 120px, #ddd, rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 200px 200px;
+            animation: twinkle 5s infinite linear;
+            z-index: -1;
+        }
+
+        @keyframes twinkle {
+            from { background-position: 0 0; }
+            to { background-position: -200px -200px; }
+        }
+
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: var(--secondary-bg);
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            text-align: center;
+            border: 2px solid var(--accent-color);
+            z-index: 1;
+        }
+
+        h1 {
+            color: var(--accent-color);
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+        
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+        }
+
+        p {
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+        
+        /* Level selection screen */
+        #level-selection-screen .level-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, var(--accent-color), #29b6f6);
+            color: var(--primary-bg);
+            border: none;
+            padding: 15px 30px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            width: 80%;
+            max-width: 300px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(77, 208, 225, 0.3);
+        }
+
+        /* Game screen */
+        #game-screen {
+            display: none;
+        }
+        
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        #question-container {
+            margin-bottom: 20px;
+        }
+
+        #question-text {
+            font-size: 1.4rem;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #answer-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .answer-btn {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--text-color);
+            border: 2px solid var(--accent-color);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s ease;
+        }
+        
+        .answer-btn:hover:not(:disabled) {
+            background-color: rgba(77, 208, 225, 0.3);
+        }
+
+        .answer-btn.correct {
+            background-color: var(--correct-color);
+            border-color: var(--correct-color);
+            color: #fff;
+        }
+
+        .answer-btn.incorrect {
+            background-color: var(--incorrect-color);
+            border-color: var(--incorrect-color);
+            color: #fff;
+        }
+
+        .answer-btn:disabled {
+            cursor: not-allowed;
+        }
+        
+        #next-btn {
+            display: none; /* Hidden by default */
+        }
+        
+        /* End screen */
+        #end-screen {
+            display: none;
+        }
+        
+        #final-score {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            margin: 20px 0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.5rem; }
+            .container { padding: 20px; }
+            #answer-buttons { grid-template-columns: 1fr; }
+            #question-text { font-size: 1.2rem; }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="stars"></div>
+
+    <div class="container">
+        <!-- Level Selection Screen -->
+        <div id="level-selection-screen">
+            <h1>Science Explorer</h1>
+            <p>Select your grade level to begin the challenge!</p>
+            <div class="level-buttons">
+                <button class="btn level-btn" data-level="grades6_8">Grades 6 - 8</button>
+                <button class="btn level-btn" data-level="grades9_10">Grades 9 - 10</button>
+                <button class="btn level-btn" data-level="grades11_12">Grades 11 - 12</button>
+            </div>
+        </div>
+
+        <!-- Main Game Screen -->
+        <div id="game-screen">
+            <div class="hud">
+                <div id="question-counter"></div>
+                <div id="score">Score: 0</div>
+            </div>
+            <div id="question-container">
+                <h2 id="question-text">Question text goes here</h2>
+            </div>
+            <div id="answer-buttons" class="btn-grid">
+                <!-- Answer buttons will be generated here by JS -->
+            </div>
+            <button id="next-btn" class="btn">Next</button>
+        </div>
+        
+        <!-- End Screen -->
+        <div id="end-screen">
+            <h2>Quiz Complete!</h2>
+            <p>Your final score is:</p>
+            <div id="final-score">0 / 0</div>
+            <button id="restart-btn" class="btn">Play Again</button>
+        </div>
+
+    </div>
+
+    <script>
+        // DOM Elements
+        const levelSelectionScreen = document.getElementById('level-selection-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const endScreen = document.getElementById('end-screen');
+
+        const levelButtons = document.querySelectorAll('.level-btn');
+        const questionTextElement = document.getElementById('question-text');
+        const answerButtonsElement = document.getElementById('answer-buttons');
+        const nextButton = document.getElementById('next-btn');
+        const restartButton = document.getElementById('restart-btn');
+        
+        const questionCounterElement = document.getElementById('question-counter');
+        const scoreElement = document.getElementById('score');
+        const finalScoreElement = document.getElementById('final-score');
+
+        // Game State
+        let currentLevelQuestions = [];
+        let shuffledQuestions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        // Questions Database
+        const questions = {
+            grades6_8: [
+                {
+                    question: 'Which planet is known as the "Red Planet"?',
+                    answers: [
+                        { text: 'Earth', correct: false },
+                        { text: 'Mars', correct: true },
+                        { text: 'Jupiter', correct: false },
+                        { text: 'Saturn', correct: false }
+                    ]
+                },
+                {
+                    question: 'What is the process by which plants make their own food?',
+                    answers: [
+                        { text: 'Respiration', correct: false },
+                        { text: 'Transpiration', correct: false },
+                        { text: 'Photosynthesis', correct: true },
+                        { text: 'Germination', correct: false }
+                    ]
+                },
+                {
+                    question: 'What are the three primary states of matter?',
+                    answers: [
+                        { text: 'Solid, Liquid, Gas', correct: true },
+                        { text: 'Rock, Water, Air', correct: false },
+                        { text: 'Ice, Water, Steam', correct: false },
+                        { text: 'Solid, Plasma, Liquid', correct: false }
+                    ]
+                },
+                {
+                    question: 'What force pulls objects towards the center of the Earth?',
+                    answers: [
+                        { text: 'Magnetism', correct: false },
+                        { text: 'Friction', correct: false },
+                        { text: 'Inertia', correct: false },
+                        { text: 'Gravity', correct: true }
+                    ]
+                },
+                 {
+                    question: 'What is the powerhouse of the cell?',
+                    answers: [
+                        { text: 'Nucleus', correct: false },
+                        { text: 'Mitochondria', correct: true },
+                        { text: 'Ribosome', correct: false },
+                        { text: 'Cell Wall', correct: false }
+                    ]
+                }
+            ],
+            grades9_10: [
+                {
+                    question: 'What is the chemical symbol for Gold?',
+                    answers: [
+                        { text: 'Ag', correct: false },
+                        { text: 'Go', correct: false },
+                        { text: 'Au', correct: true },
+                        { text: 'Ge', correct: false }
+                    ]
+                },
+                {
+                    question: "Which of Newton's laws states 'for every action, there is an equal and opposite reaction'?",
+                    answers: [
+                        { text: "First Law", correct: false },
+                        { text: "Second Law", correct: false },
+                        { text: "Third Law", correct: true },
+                        { text: "Law of Gravitation", correct: false }
+                    ]
+                },
+                {
+                    question: 'What is the pH of a neutral substance like pure water?',
+                    answers: [
+                        { text: '0', correct: false },
+                        { text: '7', correct: true },
+                        { text: '14', correct: false },
+                        { text: '1', correct: false }
+                    ]
+                },
+                {
+                    question: "In genetics, what does 'DNA' stand for?",
+                    answers: [
+                        { text: 'Deoxyribonucleic Acid', correct: true },
+                        { text: 'Dyna Nucleic Acid', correct: false },
+                        { text: 'Deoxyribo Nutrient Acid', correct: false },
+                        { text: 'Double Nucleic Agent', correct: false }
+                    ]
+                },
+                {
+                    question: 'What type of chemical bond involves the sharing of electron pairs between atoms?',
+                    answers: [
+                        { text: 'Ionic Bond', correct: false },
+                        { text: 'Metallic Bond', correct: false },
+                        { text: 'Hydrogen Bond', correct: false },
+                        { text: 'Covalent Bond', correct: true }
+                    ]
+                }
+            ],
+            grades11_12: [
+                {
+                    question: 'What is the general formula for an alkene?',
+                    answers: [
+                        { text: 'CₙH₂ₙ₊₂', correct: false },
+                        { text: 'CₙH₂ₙ', correct: true },
+                        { text: 'CₙH₂ₙ₋₂', correct: false },
+                        { text: 'CₙHₙ', correct: false }
+                    ]
+                },
+                {
+                    question: 'An object is dropped from rest. How far will it fall in 2 seconds (use g ≈ 10 m/s²)?',
+                    answers: [
+                        { text: '10 m', correct: false },
+                        { text: '40 m', correct: false },
+                        { text: '20 m', correct: true },
+                        { text: '5 m', correct: false }
+                    ]
+                },
+                {
+                    question: 'What is the primary function of the ribosome in a cell?',
+                    answers: [
+                        { text: 'Energy Production', correct: false },
+                        { text: 'Protein Synthesis', correct: true },
+                        { text: 'Waste Removal', correct: false },
+                        { text: 'Lipid Storage', correct: false }
+                    ]
+                },
+                {
+                    question: 'Which of the following is an example of an endothermic process?',
+                    answers: [
+                        { text: 'Burning wood', correct: false },
+                        { text: 'A condensing cloud', correct: false },
+                        { text: 'Melting ice', correct: true },
+                        { text: 'An explosion', correct: false }
+                    ]
+                },
+                {
+                    question: 'In electrochemistry, oxidation occurs at the:',
+                    answers: [
+                        { text: 'Anode', correct: true },
+                        { text: 'Cathode', correct: false },
+                        { text: 'Salt Bridge', correct: false },
+                        { text: 'Electrolyte', correct: false }
+                    ]
+                }
+            ]
+        };
+
+        // Event Listeners
+        levelButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const level = button.dataset.level;
+                startGame(level);
+            });
+        });
+
+        nextButton.addEventListener('click', () => {
+            currentQuestionIndex++;
+            setNextQuestion();
+        });
+
+        restartButton.addEventListener('click', () => {
+            endScreen.style.display = 'none';
+            levelSelectionScreen.style.display = 'block';
+        });
+
+        // Functions
+        function startGame(level) {
+            levelSelectionScreen.style.display = 'none';
+            gameScreen.style.display = 'block';
+            
+            score = 0;
+            currentQuestionIndex = 0;
+            currentLevelQuestions = questions[level];
+            shuffledQuestions = currentLevelQuestions.sort(() => Math.random() - 0.5);
+            
+            updateScore();
+            setNextQuestion();
+        }
+
+        function setNextQuestion() {
+            resetState();
+            if (currentQuestionIndex < shuffledQuestions.length) {
+                showQuestion(shuffledQuestions[currentQuestionIndex]);
+                questionCounterElement.innerText = `Question: ${currentQuestionIndex + 1} / ${shuffledQuestions.length}`;
+            } else {
+                showEndScreen();
+            }
+        }
+
+        function showQuestion(question) {
+            questionTextElement.innerText = question.question;
+            question.answers.forEach(answer => {
+                const button = document.createElement('button');
+                button.innerText = answer.text;
+                button.classList.add('answer-btn');
+                if (answer.correct) {
+                    button.dataset.correct = answer.correct;
+                }
+                button.addEventListener('click', selectAnswer);
+                answerButtonsElement.appendChild(button);
+            });
+        }
+
+        function resetState() {
+            nextButton.style.display = 'none';
+            while (answerButtonsElement.firstChild) {
+                answerButtonsElement.removeChild(answerButtonsElement.firstChild);
+            }
+        }
+
+        function selectAnswer(e) {
+            const selectedButton = e.target;
+            const correct = selectedButton.dataset.correct === 'true';
+            
+            if (correct) {
+                score++;
+                updateScore();
+            }
+            
+            setStatusClass(selectedButton, correct);
+            
+            Array.from(answerButtonsElement.children).forEach(button => {
+                setStatusClass(button, button.dataset.correct === 'true');
+                button.disabled = true; // Disable all buttons after an answer is selected
+            });
+
+            nextButton.style.display = 'block';
+        }
+
+        function setStatusClass(element, correct) {
+            clearStatusClass(element);
+            if (correct) {
+                element.classList.add('correct');
+            } else {
+                element.classList.add('incorrect');
+            }
+        }
+
+        function clearStatusClass(element) {
+            element.classList.remove('correct');
+            element.classList.remove('incorrect');
+        }
+
+        function updateScore() {
+            scoreElement.innerText = `Score: ${score}`;
+        }
+        
+        function showEndScreen() {
+            gameScreen.style.display = 'none';
+            endScreen.style.display = 'block';
+            finalScoreElement.innerText = `${score} / ${shuffledQuestions.length}`;
+        }
+
+    </script>
+</body>
+</html>

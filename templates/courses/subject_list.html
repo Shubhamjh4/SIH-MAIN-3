@@ -1,0 +1,25 @@
+{% extends "courses/base_courses.html" %}
+
+{% block courses_content %}
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <h2 class="text-2xl font-bold text-gray-900">Available Subjects</h2>
+  <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for subject in subjects %}
+    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      {% if subject.image %}
+      <img src="{{ subject.image.url }}" class="w-full h-40 object-cover" alt="{{ subject.name }}">
+      {% endif %}
+      <div class="p-6">
+        <h3 class="text-lg font-semibold text-gray-900">{{ subject.name }}</h3>
+        <p class="mt-2 text-sm text-gray-600">{{ subject.description|truncatewords:30 }}</p>
+        <div class="mt-4 flex gap-2">
+          <a href="{% url 'courses:subject-detail' subject.pk %}" class="inline-flex items-center px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white text-sm">View Courses</a>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="text-gray-600">No subjects available yet.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
