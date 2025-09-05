@@ -26,6 +26,7 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from accounts.views import RegisterView, logout_view
+from .views import HomeView
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -42,7 +43,7 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('', lambda request: redirect('home') if request.user.is_authenticated else redirect('login'), name='index'),
-    path('home/', TemplateView.as_view(template_name='home.html'), name='home'),
+    path('home/', HomeView.as_view(), name='home'),
     path('admin/', admin.site.urls),
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('register/', RegisterView.as_view(), name='register'),

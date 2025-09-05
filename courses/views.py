@@ -300,10 +300,11 @@ class CourseViewSet(viewsets.ModelViewSet):
             from reportlab.lib.pagesizes import A4
             from reportlab.pdfgen import canvas
             from reportlab.lib.units import cm
-        except Exception:
+        except ImportError as e:
             return Response(
                 {
                     'error': 'PDF generator not available. Please install reportlab.',
+                    'details': str(e),
                     'fix': 'pip install reportlab'
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -432,8 +433,12 @@ class LessonViewSet(viewsets.ModelViewSet):
             from reportlab.lib.pagesizes import A4
             from reportlab.pdfgen import canvas
             from reportlab.lib.units import cm
-        except Exception:
-            return Response({'error': 'reportlab not installed'}, status=500)
+        except ImportError as e:
+            return Response({
+                'error': 'reportlab not installed',
+                'details': str(e),
+                'fix': 'pip install reportlab'
+            }, status=500)
 
         lesson = self.get_object()
         buffer = BytesIO()
