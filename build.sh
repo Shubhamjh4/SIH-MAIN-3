@@ -2,8 +2,25 @@
 # exit on error
 set -o errexit
 
-cd sih-main-3
-./build.sh
+# If manage.py is at repo root (e.g., SIH-MAIN-3), run here.
+if [ -f "manage.py" ]; then
+  pip install -r requirements.txt
+  python manage.py collectstatic --no-input
+  python manage.py migrate
+  exit 0
+fi
+
+# Otherwise, assume monorepo layout with sih-main-3/ (e.g., SIH-MAIN)
+if [ -d "sih-main-3" ]; then
+  cd sih-main-3
+  pip install -r requirements.txt
+  python manage.py collectstatic --no-input
+  python manage.py migrate
+  exit 0
+fi
+
+echo "Could not find manage.py or sih-main-3 directory" >&2
+exit 1
 
 #!/usr/bin/env bash
 # exit on error
