@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: pankh-learning
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn learning_platform.wsgi:application
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.0
+      - key: DEBUG
+        value: False
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: DATABASE_URL
+        sync: false
+    autoDeploy: true
