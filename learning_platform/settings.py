@@ -52,6 +52,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.locale.LocaleMiddleware',
@@ -134,11 +135,20 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = "/static/"
+
+# Where collectstatic will put all files for production
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# (Optional) Extra static files folder in development
+STATICFILES_DIRS = [
+    BASE_DIR / "static",   # only if you have a /static folder in your repo
+]
+
+# WhiteNoise storage backend (for compressed + hashed filenames)
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 
 # Media files
 MEDIA_URL = 'media/'
