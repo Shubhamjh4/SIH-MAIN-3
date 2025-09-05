@@ -2,7 +2,7 @@ services:
   - type: web
     name: pankh-learning
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: bash build.sh
     startCommand: gunicorn learning_platform.wsgi:application
     envVars:
       - key: PYTHON_VERSION
@@ -10,7 +10,7 @@ services:
       - key: DEBUG
         value: False
       - key: ALLOWED_HOSTS
-        value: "pankh-af0o.onrender.com"
+        value: ".onrender.com,pankh-af0o.onrender.com"
       - key: DATABASE_URL
         sync: false
     autoDeploy: true
